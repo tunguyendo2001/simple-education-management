@@ -6,6 +6,7 @@ import org.hibernate.annotations.UpdateTimestamp;
 
 import javax.persistence.*;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Data
 @Entity
@@ -20,7 +21,7 @@ public class Score {
     private String className;
     private int semester;
     private int year;
-    private int[] ddgtx;
+    private List<Integer> ddgtx;
     private int ddggk;
     private int ddgck;
     private int tbm;
@@ -76,11 +77,11 @@ public class Score {
         this.year = year;
     }
 
-    public int[] getDdgtx() {
+    public List<Integer> getDdgtx() {
         return ddgtx;
     }
 
-    public void setDdgtx(int[] ddgtx) {
+    public void setDdgtx(List<Integer> ddgtx) {
         this.ddgtx = ddgtx;
     }
 
