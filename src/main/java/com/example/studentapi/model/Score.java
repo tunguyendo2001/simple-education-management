@@ -6,10 +6,7 @@ import org.hibernate.annotations.UpdateTimestamp;
 
 import javax.persistence.*;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Data
 @Entity
@@ -19,20 +16,39 @@ public class Score {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(nullable = false)
     private Long studentId;
+    
+    @Column(nullable = false)
     private Long teacherId;
+    
+    // Add normalized class reference
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "class_id")
+    private Class classEntity;
+    
+    // Keep denormalized className for backward compatibility and performance
+    @Column(nullable = false)
     private String className;
+    
+    @Column(nullable = false)
     private int semester;
+    
+    @Column(nullable = false)
     private int year;
     
-    // Store as comma-separated string in database
-    @Column(name = "ddgtx")
-    private String ddgtxString;
+    // Store the list using @ElementCollection
+    @ElementCollection
+    @CollectionTable(name = "score_ddgtx", joinColumns = @JoinColumn(name = "score_id"))
+    @Column(name = "ddgtx_value")
+    private List<Integer> ddgtx;
     
     private int ddggk;
     private int ddgck;
     private int tbm;
     private String comment;
+    
+    // Denormalized fields for performance
     private String studentName;
     private String teacherName;
 
@@ -42,32 +58,7 @@ public class Score {
     @UpdateTimestamp
     private LocalDateTime updatedAt;
 
-    // Transient getter and setter for List<Integer>
-    @Transient
-    public List<Integer> getDdgtx() {
-        if (ddgtxString == null || ddgtxString.trim().isEmpty()) {
-            return new ArrayList<>();
-        }
-        return Arrays.stream(ddgtxString.split(","))
-                .map(String::trim)
-                .filter(s -> !s.isEmpty())
-                .map(Integer::parseInt)
-                .collect(Collectors.toList());
-    }
-
-    @Transient
-    public void setDdgtx(List<Integer> ddgtx) {
-        if (ddgtx == null || ddgtx.isEmpty()) {
-            this.ddgtxString = null;
-        } else {
-            this.ddgtxString = ddgtx.stream()
-                    .map(String::valueOf)
-                    .collect(Collectors.joining(","));
-        }
-    }
-
-    // Getters and Setters for other fields
-
+    // Getters and Setters remain the same
     public Long getStudentId() {
         return studentId;
     }
@@ -82,6 +73,18 @@ public class Score {
 
     public void setTeacherId(Long teacherId) {
         this.teacherId = teacherId;
+    }
+
+    public Class getClassEntity() {
+        return classEntity;
+    }
+
+    public void setClassEntity(Class classEntity) {
+        this.classEntity = classEntity;
+        // Automatically sync className when classEntity is set
+        if (classEntity != null) {
+            this.className = classEntity.getClassName();
+        }
     }
 
     public String getClassName() {
@@ -106,6 +109,14 @@ public class Score {
 
     public void setYear(int year) {
         this.year = year;
+    }
+
+    public List<Integer> getDdgtx() {
+        return ddgtx;
+    }
+
+    public void setDdgtx(List<Integer> ddgtx) {
+        this.ddgtx = ddgtx;
     }
 
     public int getDdggk() {
@@ -170,14 +181,5 @@ public class Score {
 
     public void setTeacherName(String teacherName) {
         this.teacherName = teacherName;
-    }
-
-    // Direct access to string representation (for database operations)
-    public String getDdgtxString() {
-        return ddgtxString;
-    }
-
-    public void setDdgtxString(String ddgtxString) {
-        this.ddgtxString = ddgtxString;
     }
 }
