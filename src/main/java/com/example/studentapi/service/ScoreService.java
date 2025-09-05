@@ -1,3 +1,4 @@
+// Updated ScoreService.java
 package com.example.studentapi.service;
 
 import com.example.studentapi.model.Score;
@@ -14,4 +15,13 @@ public interface ScoreService {
     void delete(Long id);
     List<Score> importFromExcel(MultipartFile file) throws IOException;
     void exportToExcel(HttpServletResponse response) throws IOException;
+    
+    // Add the missing method
+    List<Score> findByClassNameAndYearAndSemester(String className, int year, int semester);
+    
+    // Additional useful methods
+    List<Score> findByStudentId(Long studentId);
+    List<Score> findByTeacherId(Long teacherId);
+    List<Score> findByClassName(String className);
+    List<Score> findByYearAndSemester(int year, int semester);
 }

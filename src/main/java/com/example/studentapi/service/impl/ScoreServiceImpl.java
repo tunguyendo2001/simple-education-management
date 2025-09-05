@@ -1,3 +1,4 @@
+// Updated ScoreServiceImpl.java
 package com.example.studentapi.service.impl;
 
 import com.example.studentapi.model.Score;
@@ -49,6 +50,37 @@ public class ScoreServiceImpl implements ScoreService {
     @Override
     public void delete(Long id) {
         scoreRepository.deleteById(id);
+    }
+
+    // Implementation of the missing method
+    @Override
+    public List<Score> findByClassNameAndYearAndSemester(String className, int year, int semester) {
+        return scoreRepository.findByClassNameAndYearAndSemester(className, year, semester);
+    }
+
+    @Override
+    public List<Score> findByStudentId(Long studentId) {
+        return scoreRepository.findByStudentId(studentId);
+    }
+
+    @Override
+    public List<Score> findByTeacherId(Long teacherId) {
+        return scoreRepository.findByTeacherId(teacherId);
+    }
+
+    @Override
+    public List<Score> findByClassName(String className) {
+        return scoreRepository.findByClassName(className);
+    }
+
+    @Override
+    public List<Score> findByYearAndSemester(int year, int semester) {
+        return scoreRepository.findByYearAndSemester(year, semester);
+    }
+
+    // Security method to check teacher access
+    public boolean teacherHasAccessToClass(Long teacherId, String className) {
+        return scoreRepository.teacherHasAccessToClass(teacherId, className);
     }
 
     @Override
@@ -110,6 +142,75 @@ public class ScoreServiceImpl implements ScoreService {
             // Write workbook to response
             response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
             response.setHeader("Content-Disposition", "attachment; filename=so_diem_ca_nhan.xlsx");
+            workbook.write(response.getOutputStream());
+
+        } finally {
+            workbook.close();
+        }
+    }
+
+    // Secured export method for specific teacher
+    public void exportToExcelForTeacher(HttpServletResponse response, Long teacherId) throws IOException {
+        // Only get scores for classes that this teacher has access to
+        List<Score> scores = scoreRepository.findByTeacherId(teacherId);
+        
+        if (scores.isEmpty()) {
+            response.setStatus(HttpServletResponse.SC_NOT_FOUND);
+            response.getWriter().write("No score data available to export for this teacher");
+            return;
+        }
+
+        // Create an Excel workbook
+        Workbook workbook = new XSSFWorkbook();
+        try {
+            // Group scores by className
+            Map<String, List<Score>> classMap = scores.stream()
+                    .collect(Collectors.groupingBy(Score::getClassName));
+
+            for (Map.Entry<String, List<Score>> classEntry : classMap.entrySet()) {
+                String className = classEntry.getKey();
+                List<Score> classScores = classEntry.getValue();
+                
+                // Double-check teacher has access to this class
+                if (classScores.isEmpty() || !classScores.get(0).getTeacherId().equals(teacherId)) {
+                    continue;
+                }
+
+                // Create a sheet for each class
+                Sheet sheet = workbook.createSheet(className);
+
+                // Get teacher name
+                String teacherName = classScores.get(0).getTeacherName() != null ? 
+                    classScores.get(0).getTeacherName() : "Teacher";
+
+                // Group by studentId to get unique students
+                Map<Long, List<Score>> studentMap = classScores.stream()
+                        .collect(Collectors.groupingBy(Score::getStudentId));
+
+                // Sort students by name
+                List<Long> sortedStudentIds = new ArrayList<>(studentMap.keySet());
+                sortedStudentIds.sort((id1, id2) -> {
+                    String name1 = studentMap.get(id1).get(0).getStudentName();
+                    String name2 = studentMap.get(id2).get(0).getStudentName();
+                    return name1.compareTo(name2);
+                });
+
+                // Create header section
+                createHeader(sheet, className, teacherName, sortedStudentIds.size());
+
+                // Create column headers
+                createColumnHeaders(sheet);
+
+                // Fill student data
+                fillStudentData(sheet, studentMap, sortedStudentIds);
+
+                // Auto-size columns for better readability
+                autoSizeColumns(sheet);
+            }
+
+            // Write workbook to response
+            response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+            response.setHeader("Content-Disposition", "attachment; filename=so_diem_ca_nhan_teacher_" + teacherId + ".xlsx");
             workbook.write(response.getOutputStream());
 
         } finally {
