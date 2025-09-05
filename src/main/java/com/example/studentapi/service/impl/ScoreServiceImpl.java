@@ -75,446 +75,248 @@ public class ScoreServiceImpl implements ScoreService {
                     continue;
                 }
 
-                // Create a sheet
-                Sheet sheet = workbook.createSheet(className + "-Tin học");
+                // Create a sheet for each class
+                Sheet sheet = workbook.createSheet(className);
 
                 // Get teacher name (assume consistent for class)
-                String teacherName = classScores.get(0).getTeacherName() != null ? classScores.get(0).getTeacherName() : "";
+                String teacherName = classScores.get(0).getTeacherName() != null ? classScores.get(0).getTeacherName()
+                        : "Nguyễn Thị Thủy";
 
                 // Group by studentId to get unique students
                 Map<Long, List<Score>> studentMap = classScores.stream()
                         .collect(Collectors.groupingBy(Score::getStudentId));
 
-                int ss = studentMap.size();
-
                 // Sort students by name
                 List<Long> sortedStudentIds = new ArrayList<>(studentMap.keySet());
-                sortedStudentIds.sort((id1, id2) -> studentMap.get(id1).get(0).getStudentName()
-                        .compareTo(studentMap.get(id2).get(0).getStudentName()));
+                sortedStudentIds.sort((id1, id2) -> {
+                    String name1 = studentMap.get(id1).get(0).getStudentName();
+                    String name2 = studentMap.get(id2).get(0).getStudentName();
+                    return name1.compareTo(name2);
+                });
 
-                // Create header row 0
-                Row row0 = sheet.createRow(0);
-                int col = 0;
-                row0.createCell(col++).setCellValue("Lớp:");
-                row0.createCell(col++).setCellValue(className);
-                col += 2;
-                row0.createCell(col++).setCellValue("Môn:");
-                row0.createCell(col++).setCellValue("Tin học");
-                col += 2;
-                row0.createCell(col++).setCellValue("HỌC KỲ I");
-                col += 4;
-                row0.createCell(col++).setCellValue("HỌC KỲ II");
-                col += 3;
-                row0.createCell(col++).setCellValue("GV : " + teacherName);
-                col += 3;
-                row0.createCell(col++).setCellValue("Lớp:");
-                row0.createCell(col++).setCellValue(className);
-                col += 1;
-                row0.createCell(col++).setCellValue("Môn:");
-                row0.createCell(col++).setCellValue("Tin học");
-                col += 5;
-                row0.createCell(col++).setCellValue("HỌC KỲ I");
-                col += 12;
-                row0.createCell(col++).setCellValue("HỌC KỲ II");
-                col += 5;
-                row0.createCell(col++).setCellValue("GV : " + teacherName);
+                // Create header section
+                createHeader(sheet, className, teacherName, sortedStudentIds.size());
 
-                // Row 1: SS
-                Row row1 = sheet.createRow(1);
-                row1.createCell(0).setCellValue("SS:");
-                row1.createCell(1).setCellValue(ss);
-                row1.createCell(20).setCellValue("SS:");
-                row1.createCell(21).setCellValue(ss);
+                // Create column headers
+                createColumnHeaders(sheet);
 
-                // Row 2: Column headers
-                Row row2 = sheet.createRow(2);
-                col = 0;
-                row2.createCell(col++).setCellValue("TT");
-                row2.createCell(col++).setCellValue("Họ và tên học sinh");
-                row2.createCell(col++).setCellValue("ĐĐGtx");
-                col += 4;
-                row2.createCell(col++).setCellValue("ĐĐGgk");
-                row2.createCell(col++).setCellValue("ĐĐGck");
-                row2.createCell(col++).setCellValue("TBm HK1");
-                row2.createCell(col++).setCellValue("Nhận xét");
-                row2.createCell(col++).setCellValue("ĐĐGtx");
-                col += 3;
-                row2.createCell(col++).setCellValue("ĐĐGgk");
-                row2.createCell(col++).setCellValue("ĐĐGck");
-                row2.createCell(col++).setCellValue("TBm HK2");
-                row2.createCell(col++).setCellValue("Nhận xét");
-                row2.createCell(col++).setCellValue("TBm CN");
+                // Fill student data
+                fillStudentData(sheet, studentMap, sortedStudentIds);
 
-                // Second header part
-                col = 20;
-                row2.createCell(col++).setCellValue("TT");
-                row2.createCell(col++).setCellValue("Họ và tên học sinh");
-                row2.createCell(col++).setCellValue("ĐĐGtx");
-                col += 5;
-                row2.createCell(col++).setCellValue("ĐĐGgk");
-                col += 1;
-                row2.createCell(col++).setCellValue("ĐĐGck");
-                col += 1;
-                row2.createCell(col++).setCellValue("TBm HK1");
-                col += 1;
-                row2.createCell(col++).setCellValue("Nhận xét");
-                col += 7;
-                row2.createCell(col++).setCellValue("ĐĐGtx");
-                col += 4;
-                row2.createCell(col++).setCellValue("ĐĐGgk");
-                row2.createCell(col++).setCellValue("ĐĐGck");
-                row2.createCell(col++).setCellValue("TBm HK2");
-                row2.createCell(col++).setCellValue("Nhận xét");
-                row2.createCell(col++).setCellValue("TBm CN");
-
-                // Student rows
-                int rowIndex = 3;
-                int tt = 1;
-                for (Long studentId : sortedStudentIds) {
-                    List<Score> studentScores = studentMap.get(studentId);
-                    Score score1 = studentScores.stream().filter(s -> s.getSemester() == 1).findFirst().orElse(null);
-                    Score score2 = studentScores.stream().filter(s -> s.getSemester() == 2).findFirst().orElse(null);
-
-                    Row row = sheet.createRow(rowIndex++);
-                    col = 0;
-                    row.createCell(col++).setCellValue(tt);
-                    String studentName = score1 != null ? score1.getStudentName() : (score2 != null ? score2.getStudentName() : "");
-                    row.createCell(col++).setCellValue(studentName);
-
-                    if (score1 != null) {
-                        List<Integer> tx = score1.getDdgtx();
-                        if (tx != null && !tx.isEmpty()) row.createCell(col++).setCellValue(tx.get(0));
-                        if (tx != null && tx.size() > 1) row.createCell(col++).setCellValue(tx.get(1));
-                        if (tx != null && tx.size() > 2) row.createCell(col++).setCellValue(tx.get(2));
-                        col += 4 - Math.min(tx != null ? tx.size() : 0, 3); // Adjust for empty cells
-                        row.createCell(col++).setCellValue(score1.getDdggk());
-                        row.createCell(col++).setCellValue(score1.getDdgck());
-                        row.createCell(col++).setCellValue(score1.getTbm());
-                        row.createCell(col++).setCellValue(score1.getComment() != null ? score1.getComment() : "");
-                    } else {
-                        col += 9;
-                    }
-
-                    if (score2 != null) {
-                        List<Integer> tx = score2.getDdgtx();
-                        if (tx != null && !tx.isEmpty()) row.createCell(col++).setCellValue(tx.get(0));
-                        if (tx != null && tx.size() > 1) row.createCell(col++).setCellValue(tx.get(1));
-                        if (tx != null && tx.size() > 2) row.createCell(col++).setCellValue(tx.get(2));
-                        col += 3 - Math.min(tx != null ? tx.size() : 0, 3); // Adjust for empty cells
-                        row.createCell(col++).setCellValue(score2.getDdggk());
-                        row.createCell(col++).setCellValue(score2.getDdgck());
-                        row.createCell(col++).setCellValue(score2.getTbm());
-                        row.createCell(col++).setCellValue(score2.getComment() != null ? score2.getComment() : "");
-                    } else {
-                        col += 8;
-                    }
-
-                    // TBm CN as average
-                    double tbmCn = 0;
-                    int count = 0;
-                    if (score1 != null) {
-                        tbmCn += score1.getTbm();
-                        count++;
-                    }
-                    if (score2 != null) {
-                        tbmCn += score2.getTbm();
-                        count++;
-                    }
-                    if (count > 0) {
-                        row.createCell(col++).setCellValue(Math.round(tbmCn / count * 10.0) / 10.0);
-                    }
-
-                    // Second part of the row (repeating for right side)
-                    col = 20;
-                    row.createCell(col++).setCellValue(tt);
-                    row.createCell(col++).setCellValue(studentName);
-
-                    if (score1 != null) {
-                        List<Integer> tx = score1.getDdgtx();
-                        if (tx != null && !tx.isEmpty()) row.createCell(col++).setCellValue(tx.get(0));
-                        if (tx != null && tx.size() > 1) row.createCell(col++).setCellValue(tx.get(1));
-                        if (tx != null && tx.size() > 2) row.createCell(col++).setCellValue(tx.get(2));
-                        col += 5 - Math.min(tx != null ? tx.size() : 0, 3); // Adjust for empty cells
-                        row.createCell(col++).setCellValue(score1.getDdggk());
-                        col += 1;
-                        row.createCell(col++).setCellValue(score1.getDdgck());
-                        col += 1;
-                        row.createCell(col++).setCellValue(score1.getTbm());
-                        col += 1;
-                        row.createCell(col++).setCellValue(score1.getComment() != null ? score1.getComment() : "");
-                    } else {
-                        col += 12;
-                    }
-
-                    if (score2 != null) {
-                        List<Integer> tx = score2.getDdgtx();
-                        if (tx != null && !tx.isEmpty()) row.createCell(col++).setCellValue(tx.get(0));
-                        if (tx != null && tx.size() > 1) row.createCell(col++).setCellValue(tx.get(1));
-                        if (tx != null && tx.size() > 2) row.createCell(col++).setCellValue(tx.get(2));
-                        col += 4 - Math.min(tx != null ? tx.size() : 0, 3); // Adjust for empty cells
-                        row.createCell(col++).setCellValue(score2.getDdggk());
-                        row.createCell(col++).setCellValue(score2.getDdgck());
-                        row.createCell(col++).setCellValue(score2.getTbm());
-                        row.createCell(col++).setCellValue(score2.getComment() != null ? score2.getComment() : "");
-                    }
-
-                    // TBm CN as average
-                    if (count > 0) {
-                        row.createCell(col++).setCellValue(Math.round(tbmCn / count * 10.0) / 10.0);
-                    }
-
-                    tt++;
-                }
-
-                // Add empty rows to reach row 31
-                while (rowIndex < 31) {
-                    sheet.createRow(rowIndex++);
-                }
-
-                // Summary section
-                Row row31 = sheet.createRow(30);
-                row31.createCell(0).setCellValue(ss);
-                int colOffset = 20;
-                row31.createCell(colOffset++).setCellValue("TỔNG KẾT");
-                row31.createCell(colOffset++).setCellValue("Thông tin điểm");
-                colOffset += 5;
-                row31.createCell(colOffset++).setCellValue("Học kỳ I");
-                colOffset += 7;
-                row31.createCell(colOffset++).setCellValue("Học kỳ II");
-
-                Row row32 = sheet.createRow(31);
-                col = colOffset - 15;
-                row32.createCell(col++).setCellValue("Tổng");
-                row32.createCell(col++).setCellValue("G");
-                row32.createCell(col++).setCellValue("%");
-                row32.createCell(col++).setCellValue("K");
-                row32.createCell(col++).setCellValue("%");
-                row32.createCell(col++).setCellValue("TB");
-                row32.createCell(col++).setCellValue("%");
-                row32.createCell(col++).setCellValue("Y");
-
-                // Calculate statistics for HK1 and HK2
-                List<Score> hk1Scores = classScores.stream().filter(s -> s.getSemester() == 1).collect(Collectors.toList());
-                List<Score> hk2Scores = classScores.stream().filter(s -> s.getSemester() == 2).collect(Collectors.toList());
-
-                // ĐĐGtx HK1
-                int totalTx1 = 0, gTx1 = 0, kTx1 = 0, tbTx1 = 0, yTx1 = 0;
-                for (Score s : hk1Scores) {
-                    List<Integer> tx = s.getDdgtx();
-                    if (tx != null) {
-                        for (Integer sc : tx) {
-                            totalTx1++;
-                            if (sc >= 8) gTx1++;
-                            else if (sc >= 7) kTx1++;
-                            else if (sc >= 5) tbTx1++;
-                            else yTx1++;
-                        }
-                    }
-                }
-                double pGTx1 = totalTx1 > 0 ? gTx1 * 100.0 / totalTx1 : 0;
-                double pKTx1 = totalTx1 > 0 ? kTx1 * 100.0 / totalTx1 : 0;
-                double pTbTx1 = totalTx1 > 0 ? tbTx1 * 100.0 / totalTx1 : 0;
-                double pYTx1 = totalTx1 > 0 ? yTx1 * 100.0 / totalTx1 : 0;
-
-                // ĐĐGtx HK2
-                int totalTx2 = 0, gTx2 = 0, kTx2 = 0, tbTx2 = 0, yTx2 = 0;
-                for (Score s : hk2Scores) {
-                    List<Integer> tx = s.getDdgtx();
-                    if (tx != null) {
-                        for (Integer sc : tx) {
-                            totalTx2++;
-                            if (sc >= 8) gTx2++;
-                            else if (sc >= 7) kTx2++;
-                            else if (sc >= 5) tbTx2++;
-                            else yTx2++;
-                        }
-                    }
-                }
-                double pGTx2 = totalTx2 > 0 ? gTx2 * 100.0 / totalTx2 : 0;
-                double pKTx2 = totalTx2 > 0 ? kTx2 * 100.0 / totalTx2 : 0;
-                double pTbTx2 = totalTx2 > 0 ? tbTx2 * 100.0 / totalTx2 : 0;
-                double pYTx2 = totalTx2 > 0 ? yTx2 * 100.0 / totalTx2 : 0;
-
-                // Row 33: ĐĐGtx
-                Row row33 = sheet.createRow(32);
-                col = colOffset - 15;
-                row33.createCell(col++).setCellValue("Điểm ĐG thường xuyên");
-                col += 6;
-                row33.createCell(col++).setCellValue(totalTx1);
-                row33.createCell(col++).setCellValue(gTx1);
-                row33.createCell(col++).setCellValue(Math.round(pGTx1 * 10.0) / 10.0);
-                row33.createCell(col++).setCellValue(kTx1);
-                row33.createCell(col++).setCellValue(Math.round(pKTx1 * 10.0) / 10.0);
-                row33.createCell(col++).setCellValue(tbTx1);
-                row33.createCell(col++).setCellValue(Math.round(pTbTx1 * 10.0) / 10.0);
-                row33.createCell(col++).setCellValue(yTx1);
-                col += 2;
-                row33.createCell(col++).setCellValue(totalTx2);
-                row33.createCell(col++).setCellValue(gTx2);
-                row33.createCell(col++).setCellValue(Math.round(pGTx2 * 10.0) / 10.0);
-                row33.createCell(col++).setCellValue(kTx2);
-                row33.createCell(col++).setCellValue(Math.round(pKTx2 * 10.0) / 10.0);
-                row33.createCell(col++).setCellValue(tbTx2);
-                row33.createCell(col++).setCellValue(Math.round(pTbTx2 * 10.0) / 10.0);
-                row33.createCell(col++).setCellValue(yTx2);
-
-                // ĐĐGgk HK1
-                int totalGk1 = hk1Scores.size();
-                int gGk1 = (int) hk1Scores.stream().filter(s -> s.getDdggk() >= 8).count();
-                int kGk1 = (int) hk1Scores.stream().filter(s -> s.getDdggk() >= 7 && s.getDdggk() < 8).count();
-                int tbGk1 = (int) hk1Scores.stream().filter(s -> s.getDdggk() >= 5 && s.getDdggk() < 7).count();
-                int yGk1 = (int) hk1Scores.stream().filter(s -> s.getDdggk() < 5).count();
-                double pGGk1 = totalGk1 > 0 ? gGk1 * 100.0 / totalGk1 : 0;
-                double pKGk1 = totalGk1 > 0 ? kGk1 * 100.0 / totalGk1 : 0;
-                double pTbGk1 = totalGk1 > 0 ? tbGk1 * 100.0 / totalGk1 : 0;
-                double pYGk1 = totalGk1 > 0 ? yGk1 * 100.0 / totalGk1 : 0;
-
-                // ĐĐGgk HK2
-                int totalGk2 = hk2Scores.size();
-                int gGk2 = (int) hk2Scores.stream().filter(s -> s.getDdggk() >= 8).count();
-                int kGk2 = (int) hk2Scores.stream().filter(s -> s.getDdggk() >= 7 && s.getDdggk() < 8).count();
-                int tbGk2 = (int) hk2Scores.stream().filter(s -> s.getDdggk() >= 5 && s.getDdggk() < 7).count();
-                int yGk2 = (int) hk2Scores.stream().filter(s -> s.getDdggk() < 5).count();
-                double pGGk2 = totalGk2 > 0 ? gGk2 * 100.0 / totalGk2 : 0;
-                double pKGk2 = totalGk2 > 0 ? kGk2 * 100.0 / totalGk2 : 0;
-                double pTbGk2 = totalGk2 > 0 ? tbGk2 * 100.0 / totalGk2 : 0;
-                double pYGk2 = totalGk2 > 0 ? yGk2 * 100.0 / totalGk2 : 0;
-
-                // Row 34: ĐĐGgk
-                Row row34 = sheet.createRow(33);
-                col = colOffset - 15;
-                row34.createCell(col++).setCellValue("Điểm đánh giá giữa kỳ");
-                col += 6;
-                row34.createCell(col++).setCellValue(totalGk1);
-                row34.createCell(col++).setCellValue(gGk1);
-                row34.createCell(col++).setCellValue(Math.round(pGGk1 * 10.0) / 10.0);
-                row34.createCell(col++).setCellValue(kGk1);
-                row34.createCell(col++).setCellValue(Math.round(pKGk1 * 10.0) / 10.0);
-                row34.createCell(col++).setCellValue(tbGk1);
-                row34.createCell(col++).setCellValue(Math.round(pTbGk1 * 10.0) / 10.0);
-                row34.createCell(col++).setCellValue(yGk1);
-                col += 2;
-                row34.createCell(col++).setCellValue(totalGk2);
-                row34.createCell(col++).setCellValue(gGk2);
-                row34.createCell(col++).setCellValue(Math.round(pGGk2 * 10.0) / 10.0);
-                row34.createCell(col++).setCellValue(kGk2);
-                row34.createCell(col++).setCellValue(Math.round(pKGk2 * 10.0) / 10.0);
-                row34.createCell(col++).setCellValue(tbGk2);
-                row34.createCell(col++).setCellValue(Math.round(pTbGk2 * 10.0) / 10.0);
-                row34.createCell(col++).setCellValue(yGk2);
-
-                // ĐĐGck HK1
-                int totalCk1 = hk1Scores.size();
-                int gCk1 = (int) hk1Scores.stream().filter(s -> s.getDdgck() >= 8).count();
-                int kCk1 = (int) hk1Scores.stream().filter(s -> s.getDdgck() >= 7 && s.getDdgck() < 8).count();
-                int tbCk1 = (int) hk1Scores.stream().filter(s -> s.getDdgck() >= 5 && s.getDdgck() < 7).count();
-                int yCk1 = (int) hk1Scores.stream().filter(s -> s.getDdgck() < 5).count();
-                double pGCk1 = totalCk1 > 0 ? gCk1 * 100.0 / totalCk1 : 0;
-                double pKCk1 = totalCk1 > 0 ? kCk1 * 100.0 / totalCk1 : 0;
-                double pTbCk1 = totalCk1 > 0 ? tbCk1 * 100.0 / totalCk1 : 0;
-                double pYCk1 = totalCk1 > 0 ? yCk1 * 100.0 / totalCk1 : 0;
-
-                // ĐĐGck HK2
-                int totalCk2 = hk2Scores.size();
-                int gCk2 = (int) hk2Scores.stream().filter(s -> s.getDdgck() >= 8).count();
-                int kCk2 = (int) hk2Scores.stream().filter(s -> s.getDdgck() >= 7 && s.getDdgck() < 8).count();
-                int tbCk2 = (int) hk2Scores.stream().filter(s -> s.getDdgck() >= 5 && s.getDdgck() < 7).count();
-                int yCk2 = (int) hk2Scores.stream().filter(s -> s.getDdgck() < 5).count();
-                double pGCk2 = totalCk2 > 0 ? gCk2 * 100.0 / totalCk2 : 0;
-                double pKCk2 = totalCk2 > 0 ? kCk2 * 100.0 / totalCk2 : 0;
-                double pTbCk2 = totalCk2 > 0 ? tbCk2 * 100.0 / totalCk2 : 0;
-                double pYCk2 = totalCk2 > 0 ? yCk2 * 100.0 / totalCk2 : 0;
-
-                // Row 35: ĐĐGck
-                Row row35 = sheet.createRow(34);
-                col = colOffset - 15;
-                row35.createCell(col++).setCellValue("Điểm đánh giá cuối kỳ");
-                col += 6;
-                row35.createCell(col++).setCellValue(totalCk1);
-                row35.createCell(col++).setCellValue(gCk1);
-                row35.createCell(col++).setCellValue(Math.round(pGCk1 * 10.0) / 10.0);
-                row35.createCell(col++).setCellValue(kCk1);
-                row35.createCell(col++).setCellValue(Math.round(pKCk1 * 10.0) / 10.0);
-                row35.createCell(col++).setCellValue(tbCk1);
-                row35.createCell(col++).setCellValue(Math.round(pTbCk1 * 10.0) / 10.0);
-                row35.createCell(col++).setCellValue(yCk1);
-                col += 2;
-                row35.createCell(col++).setCellValue(totalCk2);
-                row35.createCell(col++).setCellValue(gCk2);
-                row35.createCell(col++).setCellValue(Math.round(pGCk2 * 10.0) / 10.0);
-                row35.createCell(col++).setCellValue(kCk2);
-                row35.createCell(col++).setCellValue(Math.round(pKCk2 * 10.0) / 10.0);
-                row35.createCell(col++).setCellValue(tbCk2);
-                row35.createCell(col++).setCellValue(Math.round(pTbCk2 * 10.0) / 10.0);
-                row35.createCell(col++).setCellValue(yCk2);
-
-                // TBM HK1
-                int totalTbm1 = hk1Scores.size();
-                int gTbm1 = (int) hk1Scores.stream().filter(s -> s.getTbm() >= 8).count();
-                int kTbm1 = (int) hk1Scores.stream().filter(s -> s.getTbm() >= 7 && s.getTbm() < 8).count();
-                int tbTbm1 = (int) hk1Scores.stream().filter(s -> s.getTbm() >= 5 && s.getTbm() < 7).count();
-                int yTbm1 = (int) hk1Scores.stream().filter(s -> s.getTbm() < 5).count();
-                double pGTbm1 = totalTbm1 > 0 ? gTbm1 * 100.0 / totalTbm1 : 0;
-                double pKTbm1 = totalTbm1 > 0 ? kTbm1 * 100.0 / totalTbm1 : 0;
-                double pTbTbm1 = totalTbm1 > 0 ? tbTbm1 * 100.0 / totalTbm1 : 0;
-                double pYTbm1 = totalTbm1 > 0 ? yTbm1 * 100.0 / totalTbm1 : 0;
-
-                // TBM HK2
-                int totalTbm2 = hk2Scores.size();
-                int gTbm2 = (int) hk2Scores.stream().filter(s -> s.getTbm() >= 8).count();
-                int kTbm2 = (int) hk2Scores.stream().filter(s -> s.getTbm() >= 7 && s.getTbm() < 8).count();
-                int tbTbm2 = (int) hk2Scores.stream().filter(s -> s.getTbm() >= 5 && s.getTbm() < 7).count();
-                int yTbm2 = (int) hk2Scores.stream().filter(s -> s.getTbm() < 5).count();
-                double pGTbm2 = totalTbm2 > 0 ? gTbm2 * 100.0 / totalTbm2 : 0;
-                double pKTbm2 = totalTbm2 > 0 ? kTbm2 * 100.0 / totalTbm2 : 0;
-                double pTbTbm2 = totalTbm2 > 0 ? tbTbm2 * 100.0 / totalTbm2 : 0;
-                double pYTbm2 = totalTbm2 > 0 ? yTbm2 * 100.0 / totalTbm2 : 0;
-
-                // Row 36: TBM
-                Row row36 = sheet.createRow(35);
-                col = colOffset - 15;
-                row36.createCell(col++).setCellValue("TBM");
-                col += 6;
-                row36.createCell(col++).setCellValue(totalTbm1);
-                row36.createCell(col++).setCellValue(gTbm1);
-                row36.createCell(col++).setCellValue(Math.round(pGTbm1 * 10.0) / 10.0);
-                row36.createCell(col++).setCellValue(kTbm1);
-                row36.createCell(col++).setCellValue(Math.round(pKTbm1 * 10.0) / 10.0);
-                row36.createCell(col++).setCellValue(tbTbm1);
-                row36.createCell(col++).setCellValue(Math.round(pTbTbm1 * 10.0) / 10.0);
-                row36.createCell(col++).setCellValue(yTbm1);
-                col += 2;
-                row36.createCell(col++).setCellValue(totalTbm2);
-                row36.createCell(col++).setCellValue(gTbm2);
-                row36.createCell(col++).setCellValue(Math.round(pGTbm2 * 10.0) / 10.0);
-                row36.createCell(col++).setCellValue(kTbm2);
-                row36.createCell(col++).setCellValue(Math.round(pKTbm2 * 10.0) / 10.0);
-                row36.createCell(col++).setCellValue(tbTbm2);
-                row36.createCell(col++).setCellValue(Math.round(pTbTbm2 * 10.0) / 10.0);
-                row36.createCell(col++).setCellValue(yTbm2);
-
-                // Set column widths
-                for (int i = 0; i < 60; i++) {
-                    sheet.setColumnWidth(i, 2000);
-                }
-                sheet.setColumnWidth(1, 8000);
-                sheet.setColumnWidth(21, 8000);
+                // Auto-size columns for better readability
+                autoSizeColumns(sheet);
             }
 
             // Write workbook to response
             response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
-            response.setHeader("Content-Disposition", "attachment; filename=so_diem_ca_nhan_.xlsx");
+            response.setHeader("Content-Disposition", "attachment; filename=so_diem_ca_nhan.xlsx");
             workbook.write(response.getOutputStream());
+
         } finally {
-            // Ensure workbook is closed to free resources
-            try {
-                workbook.close();
-            } catch (IOException e) {
-                throw new IOException("Failed to close workbook", e);
+            workbook.close();
+        }
+    }
+
+    private void createHeader(Sheet sheet, String className, String teacherName, int studentCount) {
+        // Row 0: Main header
+        Row headerRow = sheet.createRow(0);
+        headerRow.createCell(0).setCellValue("Lớp:");
+        headerRow.createCell(1).setCellValue(className);
+        headerRow.createCell(4).setCellValue("Môn:");
+        headerRow.createCell(5).setCellValue("Tin học");
+        headerRow.createCell(8).setCellValue("HỌC KỲ I");
+        headerRow.createCell(12).setCellValue("HỌC KỲ II");
+        headerRow.createCell(16).setCellValue("GV: " + teacherName);
+
+        // Row 1: Student count
+        Row countRow = sheet.createRow(1);
+        countRow.createCell(0).setCellValue("SS:");
+        countRow.createCell(1).setCellValue(studentCount);
+    }
+
+    private void createColumnHeaders(Sheet sheet) {
+        // Row 2: Column headers
+        Row headerRow = sheet.createRow(2);
+
+        String[] headers = {
+                "TT", "Họ và tên học sinh",
+                "ĐĐGtx", "ĐĐGek", "ĐĐGck", "TBm HK1", "Nhận xét",
+                "ĐĐGtx", "ĐĐGek", "ĐĐGck", "TBm HK2", "Nhận xét", "TBm CN"
+        };
+
+        for (int i = 0; i < headers.length; i++) {
+            Cell cell = headerRow.createCell(i);
+            cell.setCellValue(headers[i]);
+
+            // Style header cells
+            CellStyle headerStyle = sheet.getWorkbook().createCellStyle();
+            Font headerFont = sheet.getWorkbook().createFont();
+            headerFont.setBold(true);
+            headerStyle.setFont(headerFont);
+            headerStyle.setAlignment(HorizontalAlignment.CENTER);
+            headerStyle.setBorderBottom(BorderStyle.THIN);
+            headerStyle.setBorderTop(BorderStyle.THIN);
+            headerStyle.setBorderLeft(BorderStyle.THIN);
+            headerStyle.setBorderRight(BorderStyle.THIN);
+            cell.setCellStyle(headerStyle);
+        }
+    }
+
+    private void fillStudentData(Sheet sheet, Map<Long, List<Score>> studentMap, List<Long> sortedStudentIds) {
+        int rowIndex = 3; // Start from row 3 (after headers)
+        int studentNumber = 1;
+
+        CellStyle dataStyle = sheet.getWorkbook().createCellStyle();
+        dataStyle.setBorderBottom(BorderStyle.THIN);
+        dataStyle.setBorderTop(BorderStyle.THIN);
+        dataStyle.setBorderLeft(BorderStyle.THIN);
+        dataStyle.setBorderRight(BorderStyle.THIN);
+        dataStyle.setAlignment(HorizontalAlignment.CENTER);
+
+        CellStyle nameStyle = sheet.getWorkbook().createCellStyle();
+        nameStyle.setBorderBottom(BorderStyle.THIN);
+        nameStyle.setBorderTop(BorderStyle.THIN);
+        nameStyle.setBorderLeft(BorderStyle.THIN);
+        nameStyle.setBorderRight(BorderStyle.THIN);
+        nameStyle.setAlignment(HorizontalAlignment.LEFT);
+
+        for (Long studentId : sortedStudentIds) {
+            List<Score> studentScores = studentMap.get(studentId);
+
+            // Get scores for semester 1 and 2
+            Score hk1Score = studentScores.stream()
+                    .filter(s -> s.getSemester() == 1)
+                    .findFirst().orElse(null);
+            Score hk2Score = studentScores.stream()
+                    .filter(s -> s.getSemester() == 2)
+                    .findFirst().orElse(null);
+
+            Row row = sheet.createRow(rowIndex++);
+            int colIndex = 0;
+
+            // TT (student number)
+            Cell ttCell = row.createCell(colIndex++);
+            ttCell.setCellValue(studentNumber++);
+            ttCell.setCellStyle(dataStyle);
+
+            // Student name
+            String studentName = hk1Score != null ? hk1Score.getStudentName()
+                    : (hk2Score != null ? hk2Score.getStudentName() : "");
+            Cell nameCell = row.createCell(colIndex++);
+            nameCell.setCellValue(studentName);
+            nameCell.setCellStyle(nameStyle);
+
+            // HK1 scores
+            if (hk1Score != null) {
+                // ĐĐGtx - average of regular scores
+                double avgTx1 = hk1Score.getDdgtx() != null && !hk1Score.getDdgtx().isEmpty()
+                        ? hk1Score.getDdgtx().stream().mapToInt(Integer::intValue).average().orElse(0.0)
+                        : 0.0;
+                Cell txCell1 = row.createCell(colIndex++);
+                txCell1.setCellValue(Math.round(avgTx1 * 10.0) / 10.0);
+                txCell1.setCellStyle(dataStyle);
+
+                // ĐĐGek (mid-term)
+                Cell gkCell1 = row.createCell(colIndex++);
+                gkCell1.setCellValue(hk1Score.getDdggk());
+                gkCell1.setCellStyle(dataStyle);
+
+                // ĐĐGck (final)
+                Cell ckCell1 = row.createCell(colIndex++);
+                ckCell1.setCellValue(hk1Score.getDdgck());
+                ckCell1.setCellStyle(dataStyle);
+
+                // TBm HK1
+                Cell tbmCell1 = row.createCell(colIndex++);
+                tbmCell1.setCellValue(hk1Score.getTbm());
+                tbmCell1.setCellStyle(dataStyle);
+
+                // Comment HK1
+                Cell commentCell1 = row.createCell(colIndex++);
+                commentCell1.setCellValue(hk1Score.getComment() != null ? hk1Score.getComment() : "");
+                commentCell1.setCellStyle(dataStyle);
+            } else {
+                // Empty cells for HK1 if no data
+                for (int i = 0; i < 5; i++) {
+                    Cell emptyCell = row.createCell(colIndex++);
+                    emptyCell.setCellStyle(dataStyle);
+                }
+            }
+
+            // HK2 scores
+            if (hk2Score != null) {
+                // ĐĐGtx - average of regular scores
+                double avgTx2 = hk2Score.getDdgtx() != null && !hk2Score.getDdgtx().isEmpty()
+                        ? hk2Score.getDdgtx().stream().mapToInt(Integer::intValue).average().orElse(0.0)
+                        : 0.0;
+                Cell txCell2 = row.createCell(colIndex++);
+                txCell2.setCellValue(Math.round(avgTx2 * 10.0) / 10.0);
+                txCell2.setCellStyle(dataStyle);
+
+                // ĐĐGek (mid-term)
+                Cell gkCell2 = row.createCell(colIndex++);
+                gkCell2.setCellValue(hk2Score.getDdggk());
+                gkCell2.setCellStyle(dataStyle);
+
+                // ĐĐGck (final)
+                Cell ckCell2 = row.createCell(colIndex++);
+                ckCell2.setCellValue(hk2Score.getDdgck());
+                ckCell2.setCellStyle(dataStyle);
+
+                // TBm HK2
+                Cell tbmCell2 = row.createCell(colIndex++);
+                tbmCell2.setCellValue(hk2Score.getTbm());
+                tbmCell2.setCellStyle(dataStyle);
+
+                // Comment HK2
+                Cell commentCell2 = row.createCell(colIndex++);
+                commentCell2.setCellValue(hk2Score.getComment() != null ? hk2Score.getComment() : "");
+                commentCell2.setCellStyle(dataStyle);
+            } else {
+                // Empty cells for HK2 if no data
+                for (int i = 0; i < 5; i++) {
+                    Cell emptyCell = row.createCell(colIndex++);
+                    emptyCell.setCellStyle(dataStyle);
+                }
+            }
+
+            // TBm CN (yearly average)
+            double yearlyAvg = 0.0;
+            int count = 0;
+            if (hk1Score != null) {
+                yearlyAvg += hk1Score.getTbm();
+                count++;
+            }
+            if (hk2Score != null) {
+                yearlyAvg += hk2Score.getTbm();
+                count++;
+            }
+            if (count > 0) {
+                Cell avgCell = row.createCell(colIndex++);
+                avgCell.setCellValue(Math.round((yearlyAvg / count) * 10.0) / 10.0);
+                avgCell.setCellStyle(dataStyle);
+            } else {
+                Cell avgCell = row.createCell(colIndex++);
+                avgCell.setCellStyle(dataStyle);
             }
         }
     }
-    
+
+    private void autoSizeColumns(Sheet sheet) {
+        // Auto-size columns for better readability
+        for (int i = 0; i < 13; i++) {
+            sheet.autoSizeColumn(i);
+            // Set minimum width
+            if (sheet.getColumnWidth(i) < 2000) {
+                sheet.setColumnWidth(i, 2000);
+            }
+            // Set maximum width for name column
+            if (i == 1 && sheet.getColumnWidth(i) > 8000) {
+                sheet.setColumnWidth(i, 8000);
+            }
+        }
+    }
+
     @Override
     public List<Score> importFromExcel(MultipartFile file) throws IOException {
         throw new UnsupportedOperationException("Unimplemented method 'importFromExcel'");

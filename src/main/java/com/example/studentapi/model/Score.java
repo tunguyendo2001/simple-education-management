@@ -6,7 +6,10 @@ import org.hibernate.annotations.UpdateTimestamp;
 
 import javax.persistence.*;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Data
 @Entity
@@ -21,7 +24,11 @@ public class Score {
     private String className;
     private int semester;
     private int year;
-    private List<Integer> ddgtx;
+    
+    // Store as comma-separated string in database
+    @Column(name = "ddgtx")
+    private String ddgtxString;
+    
     private int ddggk;
     private int ddgck;
     private int tbm;
@@ -35,7 +42,31 @@ public class Score {
     @UpdateTimestamp
     private LocalDateTime updatedAt;
 
-    // Getters and Setters
+    // Transient getter and setter for List<Integer>
+    @Transient
+    public List<Integer> getDdgtx() {
+        if (ddgtxString == null || ddgtxString.trim().isEmpty()) {
+            return new ArrayList<>();
+        }
+        return Arrays.stream(ddgtxString.split(","))
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .map(Integer::parseInt)
+                .collect(Collectors.toList());
+    }
+
+    @Transient
+    public void setDdgtx(List<Integer> ddgtx) {
+        if (ddgtx == null || ddgtx.isEmpty()) {
+            this.ddgtxString = null;
+        } else {
+            this.ddgtxString = ddgtx.stream()
+                    .map(String::valueOf)
+                    .collect(Collectors.joining(","));
+        }
+    }
+
+    // Getters and Setters for other fields
 
     public Long getStudentId() {
         return studentId;
@@ -75,14 +106,6 @@ public class Score {
 
     public void setYear(int year) {
         this.year = year;
-    }
-
-    public List<Integer> getDdgtx() {
-        return ddgtx;
-    }
-
-    public void setDdgtx(List<Integer> ddgtx) {
-        this.ddgtx = ddgtx;
     }
 
     public int getDdggk() {
@@ -147,5 +170,14 @@ public class Score {
 
     public void setTeacherName(String teacherName) {
         this.teacherName = teacherName;
+    }
+
+    // Direct access to string representation (for database operations)
+    public String getDdgtxString() {
+        return ddgtxString;
+    }
+
+    public void setDdgtxString(String ddgtxString) {
+        this.ddgtxString = ddgtxString;
     }
 }
