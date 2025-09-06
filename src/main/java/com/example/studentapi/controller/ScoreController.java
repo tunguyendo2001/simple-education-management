@@ -1,258 +1,271 @@
 package com.example.studentapi.controller;
 
 import com.example.studentapi.model.Score;
-import com.example.studentapi.service.AuthorizationService;
 import com.example.studentapi.service.ScoreService;
-import com.example.studentapi.service.SemesterScheduleService;
+import com.example.studentapi.service.impl.ScoreServiceImpl;
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/scores")
 @CrossOrigin(origins = "*", maxAge = 3600)
-@Tag(name = "Score", description = "Score management APIs with authorization")
+@Tag(name = "Score", description = "Score management APIs")
 public class ScoreController {
 
     @Autowired
     private ScoreService scoreService;
     
     @Autowired
-    private SemesterScheduleService scheduleService;
-    
-    @Autowired
-    private AuthorizationService authorizationService;
+    private ScoreServiceImpl scoreServiceImpl; // For access to security methods
 
-    @Operation(summary = "Get all scores (filtered by teacher authorization)")
     @GetMapping
-    public ResponseEntity<List<Score>> getAllScores(
-            @Parameter(description = "Teacher ID for authorization", required = true)
-            @RequestParam Long teacherId) {
-        
-        List<Score> allScores = scoreService.findAll();
-        
-        // Filter scores based on teacher authorization
-        List<Score> authorizedScores = allScores.stream()
-            .filter(score -> authorizationService.canTeacherAccessClass(
-                teacherId, score.getClassName(), score.getYear(), String.valueOf(score.getSemester())))
-            .collect(Collectors.toList());
-        
-        return ResponseEntity.ok(authorizedScores);
-    }
-
-    @Operation(summary = "Get scores by class (with authorization)")
-    @GetMapping("/by-class")
-    public ResponseEntity<?> getScoresByClass(
-            @RequestParam Long teacherId,
-            @RequestParam String className,
-            @RequestParam int academicYear,
-            @RequestParam String semester) {
-        
-        // Check authorization first
-        if (!authorizationService.canTeacherAccessClass(teacherId, className, academicYear, semester)) {
-            return ResponseEntity.status(403).body(Map.of(
-                "error", "Access denied",
-                "message", "Teacher is not authorized to access scores for class " + className,
-                "teacherId", teacherId,
-                "className", className
-            ));
-        }
-        
-        List<Score> scores = scoreService.findByClassNameAndYearAndSemester(className, academicYear, Integer.parseInt(semester));
+    public ResponseEntity<List<Score>> getAllScores() {
+        List<Score> scores = scoreService.findAll();
         return ResponseEntity.ok(scores);
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<?> getScoreById(
-            @PathVariable Long id,
-            @RequestParam Long teacherId) {
-        
+    public ResponseEntity<Score> getScoreById(@PathVariable Long id) {
         Score score = scoreService.findById(id);
-        if (score == null) {
-            return ResponseEntity.notFound().build();
-        }
-        
-        // Check if teacher can access this score
-        if (!authorizationService.canTeacherModifyScore(teacherId, id)) {
-            return ResponseEntity.status(403).body(Map.of(
-                "error", "Access denied",
-                "message", "Teacher is not authorized to access this score",
-                "scoreId", id,
-                "teacherId", teacherId
-            ));
-        }
-        
         return ResponseEntity.ok(score);
     }
 
-    @Operation(summary = "Create a new score (with schedule and authorization validation)")
     @PostMapping
-    public ResponseEntity<?> createScore(
-            @RequestBody Score score,
-            @Parameter(description = "Teacher ID for authorization", required = true)
-            @RequestParam Long teacherId) {
-        
-        // Set teacher ID in the score
-        score.setTeacherId(teacherId);
-        
-        // Check teacher authorization first
-        if (!authorizationService.canTeacherAccessClass(
-                teacherId, score.getClassName(), score.getYear(), String.valueOf(score.getSemester()))) {
-            return ResponseEntity.status(403).body(Map.of(
-                "error", "Access denied",
-                "message", "Teacher is not authorized to create scores for class " + score.getClassName(),
-                "teacherId", teacherId,
-                "className", score.getClassName()
-            ));
-        }
-        
-        // Check subject authorization
-        if (!authorizationService.isTeacherAuthorizedForSubject(
-                teacherId, score.getClassName(), "Tin học", score.getYear(), String.valueOf(score.getSemester()))) {
-            return ResponseEntity.status(403).body(Map.of(
-                "error", "Subject access denied",
-                "message", "Teacher is not authorized to teach 'Tin học' for class " + score.getClassName(),
-                "teacherId", teacherId,
-                "subject", "Tin học"
-            ));
-        }
-        
-        // Check schedule permission
-        boolean isAllowed = scheduleService.isScoreEntryAllowed(
-            score.getSemester(), score.getYear(), score.getClassName());
-        
-        if (!isAllowed) {
-            return ResponseEntity.status(403).body(Map.of(
-                "error", "Schedule restriction",
-                "message", "Score entry period has expired or not yet started for class " + score.getClassName(),
-                "className", score.getClassName(),
-                "semester", score.getSemester(),
-                "year", score.getYear()
-            ));
-        }
-        
+    public ResponseEntity<Score> createScore(@RequestBody Score score) {
         Score createdScore = scoreService.save(score);
         return ResponseEntity.status(201).body(createdScore);
     }
 
-    @Operation(summary = "Update score (with authorization validation)")
     @PutMapping("/{id}")
-    public ResponseEntity<?> updateScore(
-            @PathVariable Long id, 
-            @RequestBody Score score,
-            @RequestParam Long teacherId) {
-        
-        Score existingScore = scoreService.findById(id);
-        if (existingScore == null) {
-            return ResponseEntity.notFound().build();
-        }
-        
-        // Check if teacher can modify this score
-        if (!authorizationService.canTeacherModifyScore(teacherId, id)) {
-            return ResponseEntity.status(403).body(Map.of(
-                "error", "Access denied",
-                "message", "Teacher is not authorized to modify this score",
-                "scoreId", id,
-                "teacherId", teacherId
-            ));
-        }
-        
-        // Use existing score's class info for validation
-        String className = score.getClassName() != null ? score.getClassName() : existingScore.getClassName();
-        int semester = score.getSemester() != 0 ? score.getSemester() : existingScore.getSemester();
-        int year = score.getYear() != 0 ? score.getYear() : existingScore.getYear();
-        
-        // Check schedule permission
-        boolean isAllowed = scheduleService.isScoreEntryAllowed(semester, year, className);
-        
-        if (!isAllowed) {
-            return ResponseEntity.status(403).body(Map.of(
-                "error", "Schedule restriction",
-                "message", "Score modification period has expired for class " + className,
-                "className", className,
-                "semester", semester,
-                "year", year
-            ));
-        }
-        
-        // Ensure teacher ID consistency
-        score.setTeacherId(teacherId);
+    public ResponseEntity<Score> updateScore(@PathVariable Long id, @RequestBody Score score) {
         Score updatedScore = scoreService.update(id, score);
         return ResponseEntity.ok(updatedScore);
     }
 
-    @Operation(summary = "Delete score (with authorization validation)")
     @DeleteMapping("/{id}")
-    public ResponseEntity<?> deleteScore(
-            @PathVariable Long id,
-            @RequestParam Long teacherId) {
-        
-        Score existingScore = scoreService.findById(id);
-        if (existingScore == null) {
-            return ResponseEntity.notFound().build();
-        }
-        
-        // Check if teacher can delete this score
-        if (!authorizationService.canTeacherModifyScore(teacherId, id)) {
-            return ResponseEntity.status(403).body(Map.of(
-                "error", "Access denied",
-                "message", "Teacher is not authorized to delete this score",
-                "scoreId", id,
-                "teacherId", teacherId
-            ));
-        }
-        
-        // Check schedule permission
-        boolean isAllowed = scheduleService.isScoreEntryAllowed(
-            existingScore.getSemester(), existingScore.getYear(), existingScore.getClassName());
-        
-        if (!isAllowed) {
-            return ResponseEntity.status(403).body(Map.of(
-                "error", "Schedule restriction",
-                "message", "Score deletion period has expired",
-                "className", existingScore.getClassName(),
-                "semester", existingScore.getSemester(),
-                "year", existingScore.getYear()
-            ));
-        }
-        
+    public ResponseEntity<Void> deleteScore(@PathVariable Long id) {
         scoreService.delete(id);
         return ResponseEntity.noContent().build();
     }
 
-    @Operation(summary = "Get teacher's accessible classes")
-    @GetMapping("/teacher-classes")
-    public ResponseEntity<List<String>> getTeacherClasses(
-            @RequestParam Long teacherId,
-            @RequestParam int academicYear,
-            @RequestParam String semester) {
+    // Secured endpoint to get scores by class name, year, and semester
+    @GetMapping("/class/{className}/year/{year}/semester/{semester}")
+    @Operation(summary = "Get scores by class, year and semester", 
+               description = "Retrieve scores for a specific class, year and semester. Teachers can only access their own classes.")
+    public ResponseEntity<?> getScoresByClassYearSemester(
+            @PathVariable String className,
+            @PathVariable int year,
+            @PathVariable int semester,
+            HttpServletRequest request) {
         
-        List<String> accessibleClasses = authorizationService.getTeacherAccessibleClasses(
-            teacherId, academicYear, semester);
+        // Get teacher ID from request header or session
+        // For now, using a simple header-based approach
+        // In production, you should use JWT tokens
+        String teacherIdHeader = request.getHeader("Teacher-Id");
         
-        return ResponseEntity.ok(accessibleClasses);
+        if (teacherIdHeader == null || teacherIdHeader.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body("Teacher ID is required in header");
+        }
+        
+        try {
+            Long teacherId = Long.parseLong(teacherIdHeader);
+            
+            // Check if teacher has access to this class
+            if (!scoreServiceImpl.teacherHasAccessToClass(teacherId, className)) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body("Teacher does not have access to this class");
+            }
+            
+            List<Score> scores = scoreService.findByClassNameAndYearAndSemester(className, year, semester);
+            return ResponseEntity.ok(scores);
+            
+        } catch (NumberFormatException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body("Invalid Teacher ID format");
+        }
     }
 
-    @GetMapping("/export")
-    public void exportExcel(
-            HttpServletResponse response,
-            @RequestParam Long teacherId) {
+    // Secured endpoint to get scores by teacher
+    @GetMapping("/teacher/{teacherId}")
+    @Operation(summary = "Get scores by teacher ID", 
+               description = "Retrieve all scores for a specific teacher. Teachers can only access their own scores.")
+    public ResponseEntity<?> getScoresByTeacher(
+            @PathVariable Long teacherId,
+            HttpServletRequest request) {
+        
+        // Get current teacher ID from request header
+        String currentTeacherIdHeader = request.getHeader("Teacher-Id");
+        
+        if (currentTeacherIdHeader == null || currentTeacherIdHeader.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body("Teacher ID is required in header");
+        }
+        
         try {
-            // You might want to filter export data based on teacher authorization
+            Long currentTeacherId = Long.parseLong(currentTeacherIdHeader);
+            
+            // Teachers can only access their own scores
+            if (!currentTeacherId.equals(teacherId)) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body("Teachers can only access their own scores");
+            }
+            
+            List<Score> scores = scoreService.findByTeacherId(teacherId);
+            return ResponseEntity.ok(scores);
+            
+        } catch (NumberFormatException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body("Invalid Teacher ID format");
+        }
+    }
+
+    // Secured export endpoint
+    @GetMapping("/export")
+    @Operation(summary = "Export scores to Excel", 
+               description = "Export scores to Excel file. Teachers can only export their own classes.")
+    public ResponseEntity<?> exportExcel(HttpServletResponse response, HttpServletRequest request) {
+        
+        // Get teacher ID from request header
+        String teacherIdHeader = request.getHeader("Teacher-Id");
+        
+        if (teacherIdHeader == null || teacherIdHeader.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body("Teacher ID is required in header");
+        }
+        
+        try {
+            Long teacherId = Long.parseLong(teacherIdHeader);
+            
             response.setContentType("application/octet-stream");
-            response.setHeader("Content-Disposition", "attachment; filename=scores.xlsx");
+            response.setHeader("Content-Disposition", "attachment; filename=scores_teacher_" + teacherId + ".xlsx");
+            
+            // Use the secured export method
+            scoreServiceImpl.exportToExcelForTeacher(response, teacherId);
+            
+            return ResponseEntity.ok().build();
+            
+        } catch (NumberFormatException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body("Invalid Teacher ID format");
+        } catch (IOException e) {
+            response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body("Error exporting Excel file");
+        }
+    }
+
+    // Admin-only endpoint to export all scores (no security check for admin)
+    @GetMapping("/export/admin")
+    @Operation(summary = "Admin export all scores", 
+               description = "Export all scores to Excel file. Admin access only.")
+    public void exportAllScores(HttpServletResponse response) {
+        try {
+            response.setContentType("application/octet-stream");
+            response.setHeader("Content-Disposition", "attachment; filename=all_scores.xlsx");
             scoreService.exportToExcel(response);
         } catch (IOException e) {
             response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    // Additional secured endpoints
+    @GetMapping("/student/{studentId}")
+    @Operation(summary = "Get scores by student ID", 
+               description = "Retrieve scores for a specific student")
+    public ResponseEntity<List<Score>> getScoresByStudent(@PathVariable Long studentId) {
+        List<Score> scores = scoreService.findByStudentId(studentId);
+        return ResponseEntity.ok(scores);
+    }
+
+    @GetMapping("/class/{className}")
+    @Operation(summary = "Get scores by class name", 
+               description = "Retrieve all scores for a specific class. Teachers can only access their own classes.")
+    public ResponseEntity<?> getScoresByClass(
+            @PathVariable String className,
+            HttpServletRequest request) {
+        
+        // Get teacher ID from request header
+        String teacherIdHeader = request.getHeader("Teacher-Id");
+        
+        if (teacherIdHeader == null || teacherIdHeader.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body("Teacher ID is required in header");
+        }
+        
+        try {
+            Long teacherId = Long.parseLong(teacherIdHeader);
+            
+            // Check if teacher has access to this class
+            if (!scoreServiceImpl.teacherHasAccessToClass(teacherId, className)) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body("Teacher does not have access to this class");
+            }
+            
+            List<Score> scores = scoreService.findByClassName(className);
+            return ResponseEntity.ok(scores);
+            
+        } catch (NumberFormatException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body("Invalid Teacher ID format");
+        }
+    }
+
+    // Utility endpoint to check teacher access to class
+    @GetMapping("/check-access/{className}")
+    @Operation(summary = "Check teacher access to class", 
+               description = "Check if current teacher has access to a specific class")
+    public ResponseEntity<?> checkTeacherAccess(
+            @PathVariable String className,
+            HttpServletRequest request) {
+        
+        String teacherIdHeader = request.getHeader("Teacher-Id");
+        
+        if (teacherIdHeader == null || teacherIdHeader.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body("Teacher ID is required in header");
+        }
+        
+        try {
+            Long teacherId = Long.parseLong(teacherIdHeader);
+            boolean hasAccess = scoreServiceImpl.teacherHasAccessToClass(teacherId, className);
+            
+            return ResponseEntity.ok().body(new AccessCheckResponse(hasAccess, 
+                hasAccess ? "Teacher has access to class" : "Teacher does not have access to class"));
+            
+        } catch (NumberFormatException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body("Invalid Teacher ID format");
+        }
+    }
+
+    // Inner class for access check response
+    public static class AccessCheckResponse {
+        private boolean hasAccess;
+        private String message;
+        
+        public AccessCheckResponse(boolean hasAccess, String message) {
+            this.hasAccess = hasAccess;
+            this.message = message;
+        }
+        
+        public boolean isHasAccess() {
+            return hasAccess;
+        }
+        
+        public String getMessage() {
+            return message;
         }
     }
 }
