@@ -1,5 +1,4 @@
 -- Migration Script 1: Add authentication fields to teachers table
--- File: V1__add_teacher_auth_fields.sql
 
 ALTER TABLE teachers 
 ADD COLUMN username VARCHAR(50) UNIQUE,

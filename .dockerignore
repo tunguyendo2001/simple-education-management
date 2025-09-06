@@ -1,0 +1,52 @@
+# Exclude unnecessary files from Docker build context
+
+# Version control
+.git
+.gitignore
+
+# IDE files
+.idea
+.vscode
+*.iml
+*.iws
+*.ipr
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Maven
+target/
+.mvn/
+mvnw
+mvnw.cmd
+
+# Logs
+logs/
+*.log
+
+# Temporary files
+tmp/
+*.tmp
+*.bak
+*.swp
+*~
+
+# Docker files (don't copy other docker files)
+Dockerfile
+docker-compose*.yml
+.env*
+
+# Documentation
+README.md
+docs/
+
+# Scripts
+scripts/
+
+# Backups
+backups/
+
+# Application specific
+uploads/
+node_modules/
