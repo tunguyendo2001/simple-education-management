@@ -61,7 +61,7 @@ public class Teacher {
         inverseJoinColumns = @JoinColumn(name = "class_id")
     )
     @JsonIgnore // Prevent circular reference in JSON serialization
-    private List<Class> classes;
+    private List<SchoolClass> classes;
 
     // One-to-Many relationship with Scores
     @OneToMany(mappedBy = "teacherId", fetch = FetchType.LAZY)

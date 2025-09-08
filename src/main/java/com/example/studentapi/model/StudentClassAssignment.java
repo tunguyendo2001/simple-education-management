@@ -21,7 +21,7 @@ public class StudentClassAssignment {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "class_id", nullable = false)
-    private Class classEntity;
+    private SchoolClass classEntity;
 
     @Column(nullable = false)
     private int academicYear;

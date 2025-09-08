@@ -3,7 +3,7 @@ package com.example.studentapi.service.impl;
 import com.example.studentapi.model.Score;
 import com.example.studentapi.repository.ScoreRepository;
 import com.example.studentapi.service.ScoreService;
-import com.example.studentapi.service.ClassService;
+import com.example.studentapi.service.SchoolClassService;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,7 +24,7 @@ public class ScoreServiceImpl implements ScoreService {
     private ScoreRepository scoreRepository;
     
     @Autowired
-    private ClassService classService; // Use ClassService instead of direct repository
+    private SchoolClassService classService; // Use SchoolClassService instead of direct repository
 
     @Override
     public Score findById(Long id) {
@@ -81,7 +81,7 @@ public class ScoreServiceImpl implements ScoreService {
         return scoreRepository.findByYearAndSemester(year, semester);
     }
 
-    // Security method to check teacher access - Updated to use ClassService
+    // Security method to check teacher access - Updated to use SchoolClassService
     public boolean teacherHasAccessToClass(Long teacherId, String className) {
         // For backward compatibility, we still check by className
         // In a real implementation, you might want to convert className to classId first

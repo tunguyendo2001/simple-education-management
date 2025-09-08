@@ -3,10 +3,9 @@ package com.example.studentapi.controller;
 import com.example.studentapi.model.SchoolClass;
 import com.example.studentapi.model.TeacherClassAssignment;
 import com.example.studentapi.model.StudentClassAssignment;
-import com.example.studentapi.service.ClassService;
+import com.example.studentapi.service.SchoolClassService;
 import com.example.studentapi.service.AuthorizationService;
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -23,14 +22,14 @@ import java.util.Map;
 public class ClassController {
 
     @Autowired
-    private ClassService classService;
+    private SchoolClassService classService;
     
     @Autowired
     private AuthorizationService authorizationService;
 
     @Operation(summary = "Create a new class")
     @PostMapping
-    public ResponseEntity<SchoolClass> createClass(@Valid @RequestBody Class classEntity) {
+    public ResponseEntity<SchoolClass> createClass(@Valid @RequestBody SchoolClass classEntity) {
         SchoolClass createdClass = classService.createClass(classEntity);
         return ResponseEntity.status(201).body(createdClass);
     }
