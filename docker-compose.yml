@@ -86,24 +86,24 @@ services:
     # Wait for MySQL to be ready
     command: ["./wait-for-it.sh", "mysql:3306", "--", "java", "-jar", "app.jar"]
 
-  # Redis for session management (optional)
-  redis:
-    image: redis:7-alpine
-    container_name: education_redis
-    restart: unless-stopped
-    ports:
-      - "6379:6379"
-    volumes:
-      - redis_data:/data
-    networks:
-      - education_network
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      timeout: 5s
-      retries: 3
-      interval: 10s
-      start_period: 30s
-    command: redis-server --appendonly yes
+  # # Redis for session management (optional)
+  # redis:
+  #   image: redis:7-alpine
+  #   container_name: education_redis
+  #   restart: unless-stopped
+  #   ports:
+  #     - "6379:6379"
+  #   volumes:
+  #     - redis_data:/data
+  #   networks:
+  #     - education_network
+  #   healthcheck:
+  #     test: ["CMD", "redis-cli", "ping"]
+  #     timeout: 5s
+  #     retries: 3
+  #     interval: 10s
+  #     start_period: 30s
+  #   command: redis-server --appendonly yes
 
   # Nginx Reverse Proxy (optional)
   nginx:

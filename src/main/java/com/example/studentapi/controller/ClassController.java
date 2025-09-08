@@ -1,6 +1,6 @@
 package com.example.studentapi.controller;
 
-import com.example.studentapi.model.Class;
+import com.example.studentapi.model.SchoolClass;
 import com.example.studentapi.model.TeacherClassAssignment;
 import com.example.studentapi.model.StudentClassAssignment;
 import com.example.studentapi.service.ClassService;
@@ -30,22 +30,22 @@ public class ClassController {
 
     @Operation(summary = "Create a new class")
     @PostMapping
-    public ResponseEntity<Class> createClass(@Valid @RequestBody Class classEntity) {
-        Class createdClass = classService.createClass(classEntity);
+    public ResponseEntity<SchoolClass> createClass(@Valid @RequestBody Class classEntity) {
+        SchoolClass createdClass = classService.createClass(classEntity);
         return ResponseEntity.status(201).body(createdClass);
     }
 
     @Operation(summary = "Get all classes")
     @GetMapping
-    public ResponseEntity<List<Class>> getAllClasses() {
-        List<Class> classes = classService.findAllActive();
+    public ResponseEntity<List<SchoolClass>> getAllClasses() {
+        List<SchoolClass> classes = classService.findAllActive();
         return ResponseEntity.ok(classes);
     }
 
     @Operation(summary = "Get class by ID")
     @GetMapping("/{id}")
-    public ResponseEntity<Class> getClassById(@PathVariable Long id) {
-        Class classEntity = classService.findById(id);
+    public ResponseEntity<SchoolClass> getClassById(@PathVariable Long id) {
+        SchoolClass classEntity = classService.findById(id);
         return classEntity != null ? ResponseEntity.ok(classEntity) : ResponseEntity.notFound().build();
     }
 
@@ -120,11 +120,11 @@ public class ClassController {
 
     @Operation(summary = "Get classes by academic year and semester")
     @GetMapping("/by-year-semester")
-    public ResponseEntity<List<Class>> getClassesByYearAndSemester(
+    public ResponseEntity<List<SchoolClass>> getClassesByYearAndSemester(
             @RequestParam int academicYear,
             @RequestParam String semester) {
         
-        List<Class> classes = classService.findByAcademicYearAndSemester(academicYear, semester);
+        List<SchoolClass> classes = classService.findByAcademicYearAndSemester(academicYear, semester);
         return ResponseEntity.ok(classes);
     }
 

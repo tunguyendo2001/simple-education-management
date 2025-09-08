@@ -48,15 +48,15 @@ CREATE TABLE IF NOT EXISTS classes (
 );
 
 -- Create teacher_classes junction table
-CREATE TABLE IF NOT EXISTS teacher_classes (
+CREATE TABLE teacher_classes (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     teacher_id BIGINT NOT NULL,
-    class_id BIGINT NOT NULL,
+    school_class_id BIGINT NOT NULL,  -- Fixed column name
     assigned_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     is_active BOOLEAN DEFAULT TRUE,
     FOREIGN KEY (teacher_id) REFERENCES teachers(id) ON DELETE CASCADE,
-    FOREIGN KEY (class_id) REFERENCES classes(id) ON DELETE CASCADE,
-    UNIQUE KEY unique_teacher_class (teacher_id, class_id)
+    FOREIGN KEY (school_class_id) REFERENCES classes(id) ON DELETE CASCADE,
+    UNIQUE KEY unique_teacher_class (teacher_id, school_class_id)
 );
 
 -- Create student_classes junction table
@@ -102,8 +102,9 @@ CREATE INDEX IF NOT EXISTS idx_teachers_active ON teachers(is_active);
 CREATE INDEX IF NOT EXISTS idx_classes_name ON classes(name);
 CREATE INDEX IF NOT EXISTS idx_classes_year_semester ON classes(academic_year, semester);
 
-CREATE INDEX IF NOT EXISTS idx_teacher_classes_teacher ON teacher_classes(teacher_id);
-CREATE INDEX IF NOT EXISTS idx_teacher_classes_class ON teacher_classes(class_id);
+CREATE INDEX idx_teacher_classes_teacher ON teacher_classes(teacher_id);
+CREATE INDEX idx_teacher_classes_school_class ON teacher_classes(school_class_id);
+CREATE INDEX idx_teacher_classes_active ON teacher_classes(is_active);
 
 CREATE INDEX IF NOT EXISTS idx_student_classes_student ON student_classes(student_id);
 CREATE INDEX IF NOT EXISTS idx_student_classes_class ON student_classes(class_id);

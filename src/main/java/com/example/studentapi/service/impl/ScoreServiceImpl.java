@@ -1,9 +1,9 @@
-// Updated ScoreServiceImpl.java
 package com.example.studentapi.service.impl;
 
 import com.example.studentapi.model.Score;
 import com.example.studentapi.repository.ScoreRepository;
 import com.example.studentapi.service.ScoreService;
+import com.example.studentapi.service.ClassService;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,6 +22,9 @@ public class ScoreServiceImpl implements ScoreService {
 
     @Autowired
     private ScoreRepository scoreRepository;
+    
+    @Autowired
+    private ClassService classService; // Use ClassService instead of direct repository
 
     @Override
     public Score findById(Long id) {
@@ -78,9 +81,17 @@ public class ScoreServiceImpl implements ScoreService {
         return scoreRepository.findByYearAndSemester(year, semester);
     }
 
-    // Security method to check teacher access
+    // Security method to check teacher access - Updated to use ClassService
     public boolean teacherHasAccessToClass(Long teacherId, String className) {
-        return scoreRepository.teacherHasAccessToClass(teacherId, className);
+        // For backward compatibility, we still check by className
+        // In a real implementation, you might want to convert className to classId first
+        List<Score> scores = scoreRepository.findByTeacherIdAndClassName(teacherId, className);
+        return !scores.isEmpty();
+    }
+
+    // Alternative method using classId
+    public boolean teacherHasAccessToClassById(Long teacherId, Long classId) {
+        return classService.teacherHasAccessToClass(teacherId, classId);
     }
 
     @Override
@@ -111,8 +122,8 @@ public class ScoreServiceImpl implements ScoreService {
                 Sheet sheet = workbook.createSheet(className);
 
                 // Get teacher name (assume consistent for class)
-                String teacherName = classScores.get(0).getTeacherName() != null ? classScores.get(0).getTeacherName()
-                        : "Nguyễn Thị Thủy";
+                String teacherName = classScores.get(0).getTeacherName() != null ? 
+                    classScores.get(0).getTeacherName() : "Nguyễn Thị Thủy";
 
                 // Group by studentId to get unique students
                 Map<Long, List<Score>> studentMap = classScores.stream()
@@ -218,6 +229,7 @@ public class ScoreServiceImpl implements ScoreService {
         }
     }
 
+    // Helper methods remain the same
     private void createHeader(Sheet sheet, String className, String teacherName, int studentCount) {
         // Row 0: Main header
         Row headerRow = sheet.createRow(0);
@@ -316,11 +328,6 @@ public class ScoreServiceImpl implements ScoreService {
                 Cell txCell1 = row.createCell(colIndex++);
                 txCell1.setCellValue(Math.round(avgTx1 * 10.0) / 10.0);
                 txCell1.setCellStyle(dataStyle);
-
-                // ĐĐGek (mid-term)
-                Cell gkCell1 = row.createCell(colIndex++);
-                gkCell1.setCellValue(hk1Score.getDdggk());
-                gkCell1.setCellStyle(dataStyle);
 
                 // ĐĐGck (final)
                 Cell ckCell1 = row.createCell(colIndex++);

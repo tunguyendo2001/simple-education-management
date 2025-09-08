@@ -1,5 +1,5 @@
 # Multi-stage build for optimized image size
-FROM maven:3.8.6-openjdk-17 AS build
+FROM maven:3.8.5-openjdk-17 AS build
 
 # Set working directory
 WORKDIR /app
@@ -17,7 +17,7 @@ COPY src ./src
 RUN mvn clean package -DskipTests
 
 # Runtime stage - use smaller JRE image
-FROM openjdk:17-jre-slim
+FROM openjdk:17-jdk-slim
 
 # Install useful tools and create app user
 RUN apt-get update && apt-get install -y \
