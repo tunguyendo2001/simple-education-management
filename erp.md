@@ -41,7 +41,7 @@ erDiagram
     TEACHER_CLASSES {
         bigint id PK
         bigint teacher_id FK
-        bigint school_class_id FK
+        bigint class_id FK
         varchar subject
         int academic_year
         varchar semester

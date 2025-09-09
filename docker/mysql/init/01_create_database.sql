@@ -51,12 +51,12 @@ CREATE TABLE IF NOT EXISTS classes (
 CREATE TABLE teacher_classes (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     teacher_id BIGINT NOT NULL,
-    school_class_id BIGINT NOT NULL,  -- Fixed column name
+    class_id BIGINT NOT NULL,  -- Fixed column name
     assigned_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     is_active BOOLEAN DEFAULT TRUE,
     FOREIGN KEY (teacher_id) REFERENCES teachers(id) ON DELETE CASCADE,
-    FOREIGN KEY (school_class_id) REFERENCES classes(id) ON DELETE CASCADE,
-    UNIQUE KEY unique_teacher_class (teacher_id, school_class_id)
+    FOREIGN KEY (class_id) REFERENCES classes(id) ON DELETE CASCADE,
+    UNIQUE KEY unique_teacher_class (teacher_id, class_id)
 );
 
 -- Create student_classes junction table
@@ -95,23 +95,28 @@ CREATE TABLE IF NOT EXISTS scores (
 );
 
 -- Create indexes for performance
-CREATE INDEX IF NOT EXISTS idx_teachers_username ON teachers(username);
-CREATE INDEX IF NOT EXISTS idx_teachers_email ON teachers(email);
-CREATE INDEX IF NOT EXISTS idx_teachers_active ON teachers(is_active);
+ALTER TABLE teachers
+  ADD INDEX IF NOT EXISTS idx_teachers_username (username),
+  ADD INDEX IF NOT EXISTS idx_teachers_email (email),
+  ADD INDEX IF NOT EXISTS idx_teachers_active (is_active);
 
-CREATE INDEX IF NOT EXISTS idx_classes_name ON classes(name);
-CREATE INDEX IF NOT EXISTS idx_classes_year_semester ON classes(academic_year, semester);
+ALTER TABLE classes
+  ADD INDEX IF NOT EXISTS idx_classes_name (name),
+  ADD INDEX IF NOT EXISTS idx_classes_year_semester (academic_year, semester);
 
-CREATE INDEX idx_teacher_classes_teacher ON teacher_classes(teacher_id);
-CREATE INDEX idx_teacher_classes_school_class ON teacher_classes(school_class_id);
-CREATE INDEX idx_teacher_classes_active ON teacher_classes(is_active);
+ALTER TABLE teacher_classes
+  ADD INDEX IF NOT EXISTS idx_teacher_classes_teacher (teacher_id),
+  ADD INDEX IF NOT EXISTS idx_teacher_classes_class (class_id),
+  ADD INDEX IF NOT EXISTS idx_teacher_classes_active (is_active);
 
-CREATE INDEX IF NOT EXISTS idx_student_classes_student ON student_classes(student_id);
-CREATE INDEX IF NOT EXISTS idx_student_classes_class ON student_classes(class_id);
+ALTER TABLE student_classes
+  ADD INDEX IF NOT EXISTS idx_student_classes_student (student_id),
+  ADD INDEX IF NOT EXISTS idx_student_classes_class (class_id);
 
-CREATE INDEX IF NOT EXISTS idx_scores_class_student ON scores(class_id, student_id);
-CREATE INDEX IF NOT EXISTS idx_scores_teacher_class ON scores(teacher_id, class_id);
-CREATE INDEX IF NOT EXISTS idx_scores_year_semester ON scores(year, semester);
+ALTER TABLE scores
+  ADD INDEX IF NOT EXISTS idx_scores_class_student (class_id, student_id),
+  ADD INDEX IF NOT EXISTS idx_scores_teacher_class (teacher_id, class_id),
+  ADD INDEX IF NOT EXISTS idx_scores_year_semester (year, semester);
 
 -- docker/mysql/init/03_insert_sample_data.sql
 USE education_db;
