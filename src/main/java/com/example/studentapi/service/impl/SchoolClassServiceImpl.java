@@ -16,6 +16,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 public class SchoolClassServiceImpl implements SchoolClassService {
@@ -30,7 +31,7 @@ public class SchoolClassServiceImpl implements SchoolClassService {
     private StudentRepository studentRepository;
     
     @Autowired
-    private TeacherClassAssignmentRepository teacherAssignmentRepository; // Fixed field name
+    private TeacherClassAssignmentRepository teacherAssignmentRepository;
 
     @Autowired
     private StudentClassAssignmentRepository studentAssignmentRepository;
@@ -57,8 +58,8 @@ public class SchoolClassServiceImpl implements SchoolClassService {
     @Override
     public List<SchoolClass> findAllActive() {
         return classRepository.findAll().stream()
-            .filter(Class::isActive)
-            .toList();
+            .filter(SchoolClass::isActive)
+            .collect(Collectors.toList());
     }
 
     @Override
@@ -136,27 +137,29 @@ public class SchoolClassServiceImpl implements SchoolClassService {
         return studentAssignmentRepository.findStudentsInClass(classId, academicYear, semester);
     }
 
+    @Override
     public boolean teacherHasAccessToClass(Long teacherId, Long schoolClassId) {
         return teacherAssignmentRepository.existsByTeacherIdAndSchoolClassIdAndIsActive(teacherId, schoolClassId);
     }
 
+    @Override
     public List<TeacherClassAssignment> getTeacherAssignments(Long teacherId) {
         return teacherAssignmentRepository.findActiveAssignmentsByTeacherId(teacherId);
     }
 
+    @Override
     public List<TeacherClassAssignment> getClassAssignments(Long schoolClassId) {
         return teacherAssignmentRepository.findActiveAssignmentsBySchoolClassId(schoolClassId);
     }
 
     @Override
     public List<TeacherClassAssignment> getTeachersInClass(Long classId, int academicYear, String semester) {
-        // This method would need a corresponding repository method
-        return teacherAssignmentRepository.findByTeacherIdAndClassId(null, classId)
+        return teacherAssignmentRepository.findActiveAssignmentsBySchoolClassId(classId)
             .stream()
             .filter(assignment -> assignment.getAcademicYear() == academicYear)
             .filter(assignment -> assignment.getSemester().equals(semester) || assignment.getSemester().equals("BOTH"))
             .filter(TeacherClassAssignment::isActive)
-            .toList();
+            .collect(Collectors.toList());
     }
 
     @Override
@@ -180,7 +183,7 @@ public class SchoolClassServiceImpl implements SchoolClassService {
         
         // Check if requesting teacher has authority over this class
         List<TeacherClassAssignment> teacherAssignments = teacherAssignmentRepository
-            .findByTeacherIdAndClassId(requestingTeacherId, assignment.getClassEntity().getId());
+            .findByTeacherIdAndSchoolClassId(requestingTeacherId, assignment.getClassEntity().getId());
         
         if (teacherAssignments.isEmpty() || teacherAssignments.stream().noneMatch(TeacherClassAssignment::isActive)) {
             throw new IllegalArgumentException("Not authorized to remove student from this class");

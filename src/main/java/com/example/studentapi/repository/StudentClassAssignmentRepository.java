@@ -11,8 +11,13 @@ import java.util.List;
 @Repository
 public interface StudentClassAssignmentRepository extends JpaRepository<StudentClassAssignment, Long> {
     
-    List<StudentClassAssignment> findByStudentIdAndIsActiveTrue(Long studentId);
-    List<StudentClassAssignment> findByClassIdAndIsActiveTrue(Long classId);
+    // Use explicit queries to avoid Spring Data JPA parsing issues
+    @Query("SELECT sca FROM StudentClassAssignment sca WHERE sca.student.id = :studentId AND sca.isActive = true")
+    List<StudentClassAssignment> findByStudentIdAndIsActiveTrue(@Param("studentId") Long studentId);
+    
+    // Use explicit query instead of method name parsing
+    @Query("SELECT sca FROM StudentClassAssignment sca WHERE sca.classEntity.id = :classEntityId AND sca.isActive = true")
+    List<StudentClassAssignment> findByClassEntityIdAndIsActiveTrue(@Param("classEntityId") Long classEntityId);
     
     @Query("SELECT sca FROM StudentClassAssignment sca JOIN sca.classEntity c WHERE sca.student.id = :studentId AND c.className = :className AND sca.academicYear = :academicYear AND (sca.semester = :semester OR sca.semester = 'BOTH') AND sca.isActive = true")
     List<StudentClassAssignment> findByStudentIdAndClassNameAndAcademicYearAndSemester(

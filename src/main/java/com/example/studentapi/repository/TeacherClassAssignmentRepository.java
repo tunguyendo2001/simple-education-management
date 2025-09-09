@@ -33,7 +33,7 @@ public interface TeacherClassAssignmentRepository extends JpaRepository<TeacherC
     @Query("SELECT tca FROM TeacherClassAssignment tca WHERE tca.schoolClassId = :schoolClassId AND tca.isActive = true")
     List<TeacherClassAssignment> findActiveAssignmentsBySchoolClassId(@Param("schoolClassId") Long schoolClassId);
 
-    @Query("SELECT tca FROM TeacherClassAssignment tca JOIN tca.classEntity c WHERE tca.teacher.id = :teacherId AND c.className = :className AND tca.academicYear = :academicYear AND (tca.semester = :semester OR tca.semester = 'BOTH') AND tca.isActive = true")
+    @Query("SELECT tca FROM TeacherClassAssignment tca JOIN tca.schoolClass c WHERE tca.teacherId = :teacherId AND c.className = :className AND tca.academicYear = :academicYear AND (tca.semester = :semester OR tca.semester = 'BOTH') AND tca.isActive = true")
     List<TeacherClassAssignment> findByTeacherIdAndClassNameAndAcademicYearAndSemester(
         @Param("teacherId") Long teacherId, 
         @Param("className") String className, 
@@ -41,16 +41,18 @@ public interface TeacherClassAssignmentRepository extends JpaRepository<TeacherC
         @Param("semester") String semester
     );
     
-    List<TeacherClassAssignment> findByTeacherIdAndClassId(Long teacherId, Long classId);
+    // Use schoolClassId instead of classId
+    @Query("SELECT tca FROM TeacherClassAssignment tca WHERE tca.teacherId = :teacherId AND tca.schoolClassId = :schoolClassId")
+    List<TeacherClassAssignment> findByTeacherIdAndSchoolClassIdQuery(@Param("teacherId") Long teacherId, @Param("schoolClassId") Long schoolClassId);
     
-    @Query("SELECT tca FROM TeacherClassAssignment tca WHERE tca.teacher.id = :teacherId AND tca.academicYear = :academicYear AND (tca.semester = :semester OR tca.semester = 'BOTH') AND tca.isActive = true")
+    @Query("SELECT tca FROM TeacherClassAssignment tca WHERE tca.teacherId = :teacherId AND tca.academicYear = :academicYear AND (tca.semester = :semester OR tca.semester = 'BOTH') AND tca.isActive = true")
     List<TeacherClassAssignment> findByTeacherIdAndAcademicYearAndSemester(
         @Param("teacherId") Long teacherId, 
         @Param("academicYear") int academicYear, 
         @Param("semester") String semester
     );
     
-    @Query("SELECT tca FROM TeacherClassAssignment tca JOIN tca.classEntity c WHERE tca.teacher.id = :teacherId AND c.className = :className AND tca.subject = :subject AND tca.academicYear = :academicYear AND (tca.semester = :semester OR tca.semester = 'BOTH') AND tca.isActive = true")
+    @Query("SELECT tca FROM TeacherClassAssignment tca JOIN tca.schoolClass c WHERE tca.teacherId = :teacherId AND c.className = :className AND tca.subject = :subject AND tca.academicYear = :academicYear AND (tca.semester = :semester OR tca.semester = 'BOTH') AND tca.isActive = true")
     List<TeacherClassAssignment> findByTeacherIdAndClassNameAndSubjectAndAcademicYearAndSemester(
         @Param("teacherId") Long teacherId,
         @Param("className") String className,
@@ -59,10 +61,10 @@ public interface TeacherClassAssignmentRepository extends JpaRepository<TeacherC
         @Param("semester") String semester
     );
     
-    @Query("SELECT COUNT(sca) > 0 FROM StudentClassAssignment sca WHERE sca.student.id = :studentId AND sca.classEntity.id = :classId AND sca.academicYear = :academicYear AND (sca.semester = :semester OR sca.semester = 'BOTH') AND sca.isActive = true")
+    @Query("SELECT COUNT(sca) > 0 FROM StudentClassAssignment sca WHERE sca.student.id = :studentId AND sca.classEntity.id = :schoolClassId AND sca.academicYear = :academicYear AND (sca.semester = :semester OR sca.semester = 'BOTH') AND sca.isActive = true")
     boolean isStudentInTeacherClass(
         @Param("studentId") Long studentId, 
-        @Param("classId") Long classId, 
+        @Param("schoolClassId") Long schoolClassId, 
         @Param("academicYear") int academicYear, 
         @Param("semester") String semester
     );

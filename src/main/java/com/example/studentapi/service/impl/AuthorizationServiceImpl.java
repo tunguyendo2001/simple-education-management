@@ -5,7 +5,6 @@ import com.example.studentapi.model.TeacherClassAssignment;
 import com.example.studentapi.repository.ScoreRepository;
 import com.example.studentapi.repository.TeacherClassAssignmentRepository;
 import com.example.studentapi.service.AuthorizationService;
-import com.example.studentapi.service.ScoreService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -35,9 +34,9 @@ public class AuthorizationServiceImpl implements AuthorizationService {
     @Override
     public boolean canTeacherAccessClass(Long teacherId, Long classId) {
         List<TeacherClassAssignment> assignments = assignmentRepository
-            .findByTeacherIdAndClassId(teacherId, classId);
+            .findByTeacherIdAndSchoolClassId(teacherId, classId);
         
-        return assignments.stream().anyMatch(assignment -> assignment.isActive());
+        return assignments.stream().anyMatch(TeacherClassAssignment::isActive);
     }
 
     @Override

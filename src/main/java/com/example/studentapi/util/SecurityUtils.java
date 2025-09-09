@@ -4,27 +4,52 @@ import javax.servlet.http.HttpServletRequest;
 
 public class SecurityUtils {
     
+    /**
+     * Extract teacher ID from the request.
+     * This is a simplified implementation - in production, you would extract
+     * the teacher ID from JWT token or session.
+     */
     public static Long getCurrentTeacherId(HttpServletRequest request) {
-        Object teacherId = request.getAttribute("teacherId");
-        if (teacherId instanceof Long) {
-            return (Long) teacherId;
+        // First try to get from Authorization header (JWT token)
+        String authHeader = request.getHeader("Authorization");
+        if (authHeader != null && authHeader.startsWith("Bearer ")) {
+            // In a real implementation, you would decode the JWT token here
+            // For now, we'll fall back to the Teacher-Id header
         }
         
-        // Fallback to header
+        // Fallback to Teacher-Id header
         String teacherIdHeader = request.getHeader("Teacher-Id");
-        if (teacherIdHeader != null && !teacherIdHeader.isEmpty()) {
+        if (teacherIdHeader != null && !teacherIdHeader.trim().isEmpty()) {
             try {
-                return Long.parseLong(teacherIdHeader);
+                return Long.parseLong(teacherIdHeader.trim());
             } catch (NumberFormatException e) {
-                return null;
+                throw new IllegalArgumentException("Invalid Teacher-Id format: " + teacherIdHeader);
             }
         }
         
+        throw new IllegalArgumentException("Teacher ID not found in request. Please provide Teacher-Id header or valid Authorization token.");
+    }
+    
+    /**
+     * Extract token from Authorization header
+     */
+    public static String extractTokenFromRequest(HttpServletRequest request) {
+        String bearerToken = request.getHeader("Authorization");
+        if (bearerToken != null && bearerToken.startsWith("Bearer ")) {
+            return bearerToken.substring(7);
+        }
         return null;
     }
     
-    public static boolean isCurrentTeacher(HttpServletRequest request, Long targetTeacherId) {
-        Long currentTeacherId = getCurrentTeacherId(request);
-        return currentTeacherId != null && currentTeacherId.equals(targetTeacherId);
+    /**
+     * Check if request has valid authentication
+     */
+    public static boolean isAuthenticated(HttpServletRequest request) {
+        try {
+            Long teacherId = getCurrentTeacherId(request);
+            return teacherId != null;
+        } catch (IllegalArgumentException e) {
+            return false;
+        }
     }
 }

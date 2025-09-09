@@ -12,9 +12,13 @@ import java.util.Optional;
 @Repository
 public interface ClassRepository extends JpaRepository<SchoolClass, Long> {
     Optional<SchoolClass> findByClassName(String className);
-    List<SchoolClass> findByGradeAndAcademicYear(int grade, int academicYear);
+    Optional<SchoolClass> findByName(String name);
+    List<SchoolClass> findByGradeLevelAndAcademicYear(int gradeLevel, int academicYear);
     List<SchoolClass> findByAcademicYearAndIsActiveTrue(int academicYear);
     
-    @Query("SELECT c FROM Class c WHERE c.academicYear = :year AND c.semester = :semester AND c.isActive = true")
+    @Query("SELECT c FROM SchoolClass c WHERE c.academicYear = :year AND c.semester = :semester AND c.isActive = true")
     List<SchoolClass> findByAcademicYearAndSemester(@Param("year") int year, @Param("semester") String semester);
+    
+    @Query("SELECT c FROM SchoolClass c WHERE c.academicYear = :year AND c.semester = :semester AND c.isActive = true")
+    List<SchoolClass> findByAcademicYearAndSemesterInt(@Param("year") int year, @Param("semester") int semester);
 }
