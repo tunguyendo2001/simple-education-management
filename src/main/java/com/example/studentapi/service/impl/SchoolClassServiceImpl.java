@@ -78,10 +78,15 @@ public class SchoolClassServiceImpl implements SchoolClassService {
         SchoolClass classEntity = classRepository.findById(classId)
             .orElseThrow(() -> new IllegalArgumentException("Class not found with id: " + classId));
 
-        // Check if assignment already exists
+        // Check if assignment already exists - using the corrected method
         List<TeacherClassAssignment> existingAssignments = teacherAssignmentRepository
-            .findByTeacherIdAndClassNameAndSubjectAndAcademicYearAndSemester(
-                teacherId, classEntity.getClassName(), subject, academicYear, semester);
+            .findByTeacherIdAndSubjectAndAcademicYearAndSemester(
+                teacherId, subject, academicYear, semester);
+        
+        // Filter by class name since we can't easily join in the repository method
+        existingAssignments = existingAssignments.stream()
+            .filter(assignment -> assignment.getClassEntity().getClassName().equals(classEntity.getClassName()))
+            .collect(Collectors.toList());
         
         if (!existingAssignments.isEmpty()) {
             throw new IllegalArgumentException("Teacher is already assigned to this class for this subject");
@@ -181,7 +186,7 @@ public class SchoolClassServiceImpl implements SchoolClassService {
         StudentClassAssignment assignment = studentAssignmentRepository.findById(assignmentId)
             .orElseThrow(() -> new IllegalArgumentException("Assignment not found"));
         
-        // Check if requesting teacher has authority over this class
+        // Check if requesting teacher has authority over this class - using corrected method
         List<TeacherClassAssignment> teacherAssignments = teacherAssignmentRepository
             .findByTeacherIdAndSchoolClassId(requestingTeacherId, assignment.getClassEntity().getId());
         

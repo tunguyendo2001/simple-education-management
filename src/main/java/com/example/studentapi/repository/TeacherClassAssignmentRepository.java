@@ -60,6 +60,14 @@ public interface TeacherClassAssignmentRepository extends JpaRepository<TeacherC
         @Param("academicYear") int academicYear,
         @Param("semester") String semester
     );
+
+    @Query("SELECT tca FROM TeacherClassAssignment tca JOIN tca.schoolClass c WHERE tca.teacherId = :teacherId AND tca.subject = :subject AND tca.academicYear = :academicYear AND (tca.semester = :semester OR tca.semester = 'BOTH') AND tca.isActive = true")
+    List<TeacherClassAssignment> findByTeacherIdAndSubjectAndAcademicYearAndSemester(
+        @Param("teacherId") Long teacherId,
+        @Param("subject") String subject,
+        @Param("academicYear") int academicYear,
+        @Param("semester") String semester
+    );
     
     @Query("SELECT COUNT(sca) > 0 FROM StudentClassAssignment sca WHERE sca.student.id = :studentId AND sca.classEntity.id = :schoolClassId AND sca.academicYear = :academicYear AND (sca.semester = :semester OR sca.semester = 'BOTH') AND sca.isActive = true")
     boolean isStudentInTeacherClass(
