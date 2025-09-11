@@ -12,7 +12,7 @@ import java.util.List;
 public interface ScoreRepository extends JpaRepository<Score, Long> {
     
     // Find scores by class name, year and semester
-    List<Score> findByClassNameAndYearAndSemester(String className, int year, int semester);
+    List<Score> findByClassNameAndYearAndSemester(String className, int year, String semester);
     
     // Find scores by student ID
     List<Score> findByStudentId(Long studentId);
@@ -24,17 +24,17 @@ public interface ScoreRepository extends JpaRepository<Score, Long> {
     List<Score> findByClassName(String className);
     
     // Find scores by year and semester
-    List<Score> findByYearAndSemester(int year, int semester);
+    List<Score> findByYearAndSemester(int year, String semester);
     
     // Find scores by student ID and semester
-    List<Score> findByStudentIdAndSemester(Long studentId, int semester);
+    List<Score> findByStudentIdAndSemester(Long studentId, String semester);
     
     // Find scores by teacher ID and class name (for authorization)
     List<Score> findByTeacherIdAndClassName(Long teacherId, String className);
     
     // Custom query to find scores with student and teacher names
     @Query("SELECT s FROM Score s WHERE s.className = :className AND s.year = :year AND s.semester = :semester ORDER BY s.studentName")
-    List<Score> findScoresForClassExport(@Param("className") String className, @Param("year") int year, @Param("semester") int semester);
+    List<Score> findScoresForClassExport(@Param("className") String className, @Param("year") int year, @Param("semester") String semester);
     
     // Check if teacher has access to specific class
     @Query("SELECT COUNT(s) > 0 FROM Score s WHERE s.teacherId = :teacherId AND s.className = :className")

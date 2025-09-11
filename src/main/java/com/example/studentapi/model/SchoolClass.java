@@ -30,7 +30,7 @@ public class SchoolClass {
     private Integer academicYear;
 
     @Column(nullable = false)
-    private Integer semester;
+    private String semester;
 
     @Column(nullable = false, length = 100)
     private String subject;

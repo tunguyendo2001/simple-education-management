@@ -20,5 +20,5 @@ public interface ClassRepository extends JpaRepository<SchoolClass, Long> {
     List<SchoolClass> findByAcademicYearAndSemester(@Param("year") int year, @Param("semester") String semester);
     
     @Query("SELECT c FROM SchoolClass c WHERE c.academicYear = :year AND c.semester = :semester AND c.isActive = true")
-    List<SchoolClass> findByAcademicYearAndSemesterInt(@Param("year") int year, @Param("semester") int semester);
+    List<SchoolClass> findByAcademicYearAndSemesterInt(@Param("year") int year, @Param("semester") String semester);
 }

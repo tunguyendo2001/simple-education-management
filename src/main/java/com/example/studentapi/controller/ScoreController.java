@@ -64,7 +64,7 @@ public class ScoreController {
     public ResponseEntity<?> getScoresByClassYearSemester(
             @PathVariable String className,
             @PathVariable int year,
-            @PathVariable int semester,
+            @PathVariable String semester,
             HttpServletRequest request) {
         
         // Get teacher ID from request header or session

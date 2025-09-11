@@ -19,7 +19,7 @@ public class SemesterSchedule {
     private String scheduleName;
 
     @Column(nullable = false)
-    private int semester; // 1 or 2
+    private String semester; // 1 or 2
 
     @Column(nullable = false)
     private int year;

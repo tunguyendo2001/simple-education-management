@@ -92,13 +92,13 @@ public class SemesterScheduleServiceImpl implements SemesterScheduleService {
     }
 
     @Override
-    public boolean isScoreEntryAllowed(int semester, int year, String className) {
+    public boolean isScoreEntryAllowed(String semester, int year, String className) {
         Optional<SemesterSchedule> schedule = scheduleRepository.findActiveSchedule(semester, year, className);
         return schedule.isPresent() && schedule.get().isCurrentlyAllowed();
     }
 
     @Override
-    public SemesterSchedule findActiveScheduleForClass(int semester, int year, String className) {
+    public SemesterSchedule findActiveScheduleForClass(String semester, int year, String className) {
         return scheduleRepository.findActiveSchedule(semester, year, className).orElse(null);
     }
 
@@ -117,7 +117,7 @@ public class SemesterScheduleServiceImpl implements SemesterScheduleService {
     }
 
     @Override
-    public List<SemesterSchedule> findByYearAndSemester(int year, int semester) {
+    public List<SemesterSchedule> findByYearAndSemester(int year, String semester) {
         return scheduleRepository.findByYearAndSemesterOrderByClassNameAsc(year, semester);
     }
 }

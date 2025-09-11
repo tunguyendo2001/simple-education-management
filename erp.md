@@ -31,7 +31,7 @@ erDiagram
         varchar class_name UK
         int grade_level
         int academic_year
-        int semester
+        String semester
         varchar subject
         boolean is_active
         datetime created_at
@@ -72,7 +72,7 @@ erDiagram
         bigint teacher_id FK
         bigint class_id FK
         varchar class_name
-        int semester
+        String semester
         int year
         varchar ddgtx
         int ddggk
@@ -88,7 +88,7 @@ erDiagram
     SEMESTER_SCHEDULES {
         bigint id PK
         varchar schedule_name
-        int semester
+        String semester
         int year
         varchar class_name
         datetime start_date_time

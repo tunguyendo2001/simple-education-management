@@ -82,7 +82,7 @@ public class SemesterScheduleController {
     @Operation(summary = "Check if score entry is allowed for a class")
     @GetMapping("/check-permission")
     public ResponseEntity<Map<String, Object>> checkScoreEntryPermission(
-            @Parameter(description = "Semester (1 or 2)") @RequestParam int semester,
+            @Parameter(description = "Semester (1 or 2)") @RequestParam String semester,
             @Parameter(description = "Year") @RequestParam int year,
             @Parameter(description = "Class name") @RequestParam String className) {
         
@@ -105,7 +105,7 @@ public class SemesterScheduleController {
     @GetMapping("/by-year-semester")
     public ResponseEntity<List<SemesterSchedule>> getSchedulesByYearAndSemester(
             @Parameter(description = "Year") @RequestParam int year,
-            @Parameter(description = "Semester (1 or 2)") @RequestParam int semester) {
+            @Parameter(description = "Semester (1 or 2)") @RequestParam String semester) {
         
         List<SemesterSchedule> schedules = scheduleService.findByYearAndSemester(year, semester);
         return ResponseEntity.ok(schedules);
@@ -123,7 +123,7 @@ public class SemesterScheduleController {
     public ResponseEntity<SemesterSchedule> createTodaySchedule(@RequestBody Map<String, Object> request) {
         try {
             String className = (String) request.get("className");
-            Integer semester = (Integer) request.get("semester");
+            String semester = (String) request.get("semester");
             Integer year = (Integer) request.get("year");
             String scheduleName = (String) request.getOrDefault("scheduleName", 
                 "Quick Schedule for " + className + " - Semester " + semester);

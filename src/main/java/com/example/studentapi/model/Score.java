@@ -31,7 +31,7 @@ public class Score {
     @Column(name = "class_name") // Keep this for backward compatibility
     private String className;
     
-    private int semester;
+    private String semester;
     private int year;
     
     // Store as comma-separated string in database
@@ -121,11 +121,11 @@ public class Score {
         this.className = className;
     }
 
-    public int getSemester() {
+    public String getSemester() {
         return semester;
     }
 
-    public void setSemester(int semester) {
+    public void setSemester(String semester) {
         this.semester = semester;
     }
 

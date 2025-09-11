@@ -57,7 +57,7 @@ public class ScoreServiceImpl implements ScoreService {
 
     // Implementation of the missing method
     @Override
-    public List<Score> findByClassNameAndYearAndSemester(String className, int year, int semester) {
+    public List<Score> findByClassNameAndYearAndSemester(String className, int year, String semester) {
         return scoreRepository.findByClassNameAndYearAndSemester(className, year, semester);
     }
 
@@ -77,7 +77,7 @@ public class ScoreServiceImpl implements ScoreService {
     }
 
     @Override
-    public List<Score> findByYearAndSemester(int year, int semester) {
+    public List<Score> findByYearAndSemester(int year, String semester) {
         return scoreRepository.findByYearAndSemester(year, semester);
     }
 
@@ -298,10 +298,10 @@ public class ScoreServiceImpl implements ScoreService {
 
             // Get scores for semester 1 and 2
             Score hk1Score = studentScores.stream()
-                    .filter(s -> s.getSemester() == 1)
+                    .filter(s -> s.getSemester() == "1")
                     .findFirst().orElse(null);
             Score hk2Score = studentScores.stream()
-                    .filter(s -> s.getSemester() == 2)
+                    .filter(s -> s.getSemester() == "2")
                     .findFirst().orElse(null);
 
             Row row = sheet.createRow(rowIndex++);

@@ -17,11 +17,11 @@ public interface ScoreService {
     void exportToExcel(HttpServletResponse response) throws IOException;
     
     // Add the missing method
-    List<Score> findByClassNameAndYearAndSemester(String className, int year, int semester);
+    List<Score> findByClassNameAndYearAndSemester(String className, int year, String semester);
     
     // Additional useful methods
     List<Score> findByStudentId(Long studentId);
     List<Score> findByTeacherId(Long teacherId);
     List<Score> findByClassName(String className);
-    List<Score> findByYearAndSemester(int year, int semester);
+    List<Score> findByYearAndSemester(int year, String semester);
 }

@@ -41,7 +41,7 @@ CREATE TABLE IF NOT EXISTS classes (
     name VARCHAR(100) NOT NULL UNIQUE,
     grade_level INT NOT NULL,
     academic_year INT NOT NULL,
-    semester INT NOT NULL,
+    semester VARCHAR(10) NOT NULL,
     subject VARCHAR(100) NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
@@ -78,7 +78,7 @@ CREATE TABLE IF NOT EXISTS scores (
     teacher_id BIGINT,
     class_id BIGINT,
     class_name VARCHAR(255), -- Keep for backward compatibility
-    semester INT,
+    semester VARCHAR(10),
     year INT,
     ddgtx VARCHAR(255),
     ddggk INT,
@@ -131,12 +131,12 @@ USE education_db;
 
 -- -- Insert sample classes
 -- INSERT IGNORE INTO classes (name, grade_level, academic_year, semester, subject) VALUES 
--- ('10A1', 10, 2024, 1, 'Tin học'),
--- ('10A2', 10, 2024, 1, 'Tin học'),
--- ('10B1', 10, 2024, 1, 'Tin học'),
--- ('11A1', 11, 2024, 1, 'Tin học'),
--- ('11A2', 11, 2024, 1, 'Tin học'),
--- ('12A1', 12, 2024, 1, 'Tin học');
+-- ('10A1', 10, 2024, "1", 'Tin học'),
+-- ('10A2', 10, 2024, "1", 'Tin học'),
+-- ('10B1', 10, 2024, "1", 'Tin học'),
+-- ('11A1', 11, 2024, "1", 'Tin học'),
+-- ('11A2', 11, 2024, "1", 'Tin học'),
+-- ('12A1', 12, 2024, "1", 'Tin học');
 
 -- -- Insert sample students
 -- INSERT IGNORE INTO students (name, gender, hometown, birthday, created_at, updated_at) VALUES 
@@ -165,17 +165,17 @@ USE education_db;
 -- -- Insert sample scores
 -- INSERT IGNORE INTO scores (student_id, teacher_id, class_id, class_name, semester, year, ddgtx, ddggk, ddgck, tbm, comment, student_name, teacher_name) VALUES 
 -- -- Semester 1 scores for class 10A1 (teacher_id=1, class_id=1)
--- (1, 1, 1, '10A1', 1, 2024, '8,9,7', 8, 9, 8, 'Khá', 'Nguyễn Văn An', 'Nguyễn Thị Thủy'),
--- (2, 1, 1, '10A1', 1, 2024, '9,8,9', 9, 8, 9, 'Giỏi', 'Trần Thị Bình', 'Nguyễn Thị Thủy'),
+-- (1, 1, 1, '10A1', "1", 2024, '8,9,7', 8, 9, 8, 'Khá', 'Nguyễn Văn An', 'Nguyễn Thị Thủy'),
+-- (2, 1, 1, '10A1', "1", 2024, '9,8,9', 9, 8, 9, 'Giỏi', 'Trần Thị Bình', 'Nguyễn Thị Thủy'),
 
 -- -- Semester 2 scores for class 10A1
--- (1, 1, 1, '10A1', 2, 2024, '9,8,8', 9, 8, 8, 'Khá', 'Nguyễn Văn An', 'Nguyễn Thị Thủy'),
--- (2, 1, 1, '10A1', 2, 2024, '9,9,10', 10, 9, 9, 'Xuất sắc', 'Trần Thị Bình', 'Nguyễn Thị Thủy'),
+-- (1, 1, 1, '10A1', "2", 2024, '9,8,8', 9, 8, 8, 'Khá', 'Nguyễn Văn An', 'Nguyễn Thị Thủy'),
+-- (2, 1, 1, '10A1', "2", 2024, '9,9,10', 10, 9, 9, 'Xuất sắc', 'Trần Thị Bình', 'Nguyễn Thị Thủy'),
 
 -- -- Semester 1 scores for class 10A2 (teacher_id=1, class_id=2)
--- (3, 1, 2, '10A2', 1, 2024, '7,8,6', 7, 8, 7, 'Trung bình', 'Lê Văn Cường', 'Nguyễn Thị Thủy'),
--- (4, 1, 2, '10A2', 1, 2024, '8,7,9', 8, 7, 8, 'Khá', 'Phạm Thị Dung', 'Nguyễn Thị Thủy'),
+-- (3, 1, 2, '10A2', "1", 2024, '7,8,6', 7, 8, 7, 'Trung bình', 'Lê Văn Cường', 'Nguyễn Thị Thủy'),
+-- (4, 1, 2, '10A2', "1", 2024, '8,7,9', 8, 7, 8, 'Khá', 'Phạm Thị Dung', 'Nguyễn Thị Thủy'),
 
 -- -- Semester 1 scores for class 10B1 (teacher_id=2, class_id=3)
--- (5, 2, 3, '10B1', 1, 2024, '9,9,8', 9, 9, 9, 'Giỏi', 'Hoàng Văn Em', 'Trần Văn Nam'),
--- (6, 2, 3, '10B1', 1, 2024, '8,8,7', 8, 8, 8, 'Khá', 'Đặng Thị Phương', 'Trần Văn Nam');
+-- (5, 2, 3, '10B1', "1", 2024, '9,9,8', 9, 9, 9, 'Giỏi', 'Hoàng Văn Em', 'Trần Văn Nam'),
+-- (6, 2, 3, '10B1', "1", 2024, '8,8,7', 8, 8, 8, 'Khá', 'Đặng Thị Phương', 'Trần Văn Nam');

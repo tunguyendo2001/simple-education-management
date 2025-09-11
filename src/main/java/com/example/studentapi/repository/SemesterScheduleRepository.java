@@ -15,7 +15,7 @@ public interface SemesterScheduleRepository extends JpaRepository<SemesterSchedu
     
     // Find active schedule for specific semester, year, and class
     @Query("SELECT s FROM SemesterSchedule s WHERE s.semester = :semester AND s.year = :year AND s.className = :className AND s.isActive = true")
-    Optional<SemesterSchedule> findActiveSchedule(@Param("semester") int semester, 
+    Optional<SemesterSchedule> findActiveSchedule(@Param("semester") String semester, 
                                                   @Param("year") int year, 
                                                   @Param("className") String className);
     
@@ -27,14 +27,14 @@ public interface SemesterScheduleRepository extends JpaRepository<SemesterSchedu
     List<SemesterSchedule> findByIsActiveTrue();
     
     // Find schedules by year and semester
-    List<SemesterSchedule> findByYearAndSemesterOrderByClassNameAsc(int year, int semester);
+    List<SemesterSchedule> findByYearAndSemesterOrderByClassNameAsc(int year, String semester);
     
     // Find schedules by class name
     List<SemesterSchedule> findByClassNameOrderByYearDescSemesterDesc(String className);
     
     // Check if there's an active schedule for a specific period
     @Query("SELECT COUNT(s) > 0 FROM SemesterSchedule s WHERE s.semester = :semester AND s.year = :year AND s.className = :className AND s.isActive = true AND ((s.startDateTime <= :endTime AND s.endDateTime >= :startTime))")
-    boolean hasOverlappingSchedule(@Param("semester") int semester, 
+    boolean hasOverlappingSchedule(@Param("semester") String semester, 
                                    @Param("year") int year, 
                                    @Param("className") String className,
                                    @Param("startTime") LocalDateTime startTime, 

@@ -9,20 +9,20 @@ This guide addresses the missing `findByClassNameAndYearAndSemester` method and 
 ### 1. Update ScoreService Interface
 Add the missing method to your `ScoreService.java`:
 ```java
-List<Score> findByClassNameAndYearAndSemester(String className, int year, int semester);
+List<Score> findByClassNameAndYearAndSemester(String className, int year, String semester);
 ```
 
 ### 2. Update ScoreRepository  
 Add the method to your `ScoreRepository.java`:
 ```java
-List<Score> findByClassNameAndYearAndSemester(String className, int year, int semester);
+List<Score> findByClassNameAndYearAndSemester(String className, int year, String semester);
 ```
 
 ### 3. Update ScoreServiceImpl
 Implement the method in your `ScoreServiceImpl.java`:
 ```java
 @Override
-public List<Score> findByClassNameAndYearAndSemester(String className, int year, int semester) {
+public List<Score> findByClassNameAndYearAndSemester(String className, int year, String semester) {
     return scoreRepository.findByClassNameAndYearAndSemester(className, year, semester);
 }
 ```

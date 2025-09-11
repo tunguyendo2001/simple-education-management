@@ -10,8 +10,8 @@ public interface SemesterScheduleService {
     SemesterSchedule findById(Long id);
     List<SemesterSchedule> findAll();
     List<SemesterSchedule> findActiveSchedules();
-    boolean isScoreEntryAllowed(int semester, int year, String className);
-    SemesterSchedule findActiveScheduleForClass(int semester, int year, String className);
+    boolean isScoreEntryAllowed(String semester, int year, String className);
+    SemesterSchedule findActiveScheduleForClass(String semester, int year, String className);
     void lockExpiredSchedules();
-    List<SemesterSchedule> findByYearAndSemester(int year, int semester);
+    List<SemesterSchedule> findByYearAndSemester(int year, String semester);
 }
