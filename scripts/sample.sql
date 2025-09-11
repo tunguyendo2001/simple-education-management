@@ -17,13 +17,13 @@ ALTER TABLE student_class_assignments AUTO_INCREMENT = 1;
 ALTER TABLE scores AUTO_INCREMENT = 1;
 ALTER TABLE semester_schedules AUTO_INCREMENT = 1;
 
--- Insert Teachers
+-- Insert Teachers, passwords are bcrypt hashes of '123456'
 INSERT INTO teachers (name, gender, hometown, birthday, username, password_hash, email, is_active, created_at, updated_at) VALUES
-('Nguyễn Thị Thủy', 'WOMEN', 'Hà Nội', '1985-03-15', 'thuynguyen', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'thuy.nguyen@school.edu.vn', true, '2023-01-15', '2024-01-15'),
-('Trần Văn Minh', 'MEN', 'Hồ Chí Minh', '1982-07-22', 'minhtran', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'minh.tran@school.edu.vn', true, '2023-01-15', '2024-01-15'),
-('Phạm Thị Lan', 'WOMEN', 'Đà Nẵng', '1988-11-08', 'lanpham', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'lan.pham@school.edu.vn', true, '2023-01-15', '2024-01-15'),
-('Lê Văn Đức', 'MEN', 'Hải Phòng', '1980-12-03', 'ducle', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'duc.le@school.edu.vn', true, '2023-01-15', '2024-01-15'),
-('Hoàng Thị Mai', 'WOMEN', 'Huế', '1987-05-20', 'maihoang', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'mai.hoang@school.edu.vn', true, '2023-01-15', '2024-01-15');
+('Nguyễn Thị Thủy', 'WOMEN', 'Hà Nội', '1985-03-15', 'thuynguyen', '$2a$10$VA8kgIIzdChsNzKerGB7/.u.V3EpBsq50fKY.w7OVxHxYR.nOGIyW', 'thuy.nguyen@school.edu.vn', true, '2023-01-15', '2024-01-15'),
+('Trần Văn Minh', 'MEN', 'Hồ Chí Minh', '1982-07-22', 'minhtran', '$2a$10$VA8kgIIzdChsNzKerGB7/.u.V3EpBsq50fKY.w7OVxHxYR.nOGIyW', 'minh.tran@school.edu.vn', true, '2023-01-15', '2024-01-15'),
+('Phạm Thị Lan', 'WOMEN', 'Đà Nẵng', '1988-11-08', 'lanpham', '$2a$10$VA8kgIIzdChsNzKerGB7/.u.V3EpBsq50fKY.w7OVxHxYR.nOGIyW', 'lan.pham@school.edu.vn', true, '2023-01-15', '2024-01-15'),
+('Lê Văn Đức', 'MEN', 'Hải Phòng', '1980-12-03', 'ducle', '$2a$10$VA8kgIIzdChsNzKerGB7/.u.V3EpBsq50fKY.w7OVxHxYR.nOGIyW', 'duc.le@school.edu.vn', true, '2023-01-15', '2024-01-15'),
+('Hoàng Thị Mai', 'WOMEN', 'Huế', '1987-05-20', 'maihoang', '$2a$10$VA8kgIIzdChsNzKerGB7/.u.V3EpBsq50fKY.w7OVxHxYR.nOGIyW', 'mai.hoang@school.edu.vn', true, '2023-01-15', '2024-01-15');
 
 -- Insert Students
 INSERT INTO students (name, gender, hometown, birthday, created_at, updated_at) VALUES
@@ -72,9 +72,9 @@ INSERT INTO teacher_classes (teacher_id, class_id, subject, academic_year, semes
 (4, 7, 'Tiếng Anh', 2024, '1', 'PRIMARY_TEACHER', true, 'Admin', true, '2024-08-20', '2024-08-20'),
 (5, 1, 'Chủ nhiệm', 2024, 'BOTH', 'PRIMARY_TEACHER', true, 'Admin', true, '2024-08-20', '2024-08-20');
 
--- Insert Student-Class Assignments (using student_id and class_entity_id based on your entity structure)
+-- Insert Student-Class Assignments (using student_id and class_id based on your entity structure)
 -- Note: Using the correct foreign key column name for class reference
-INSERT INTO student_class_assignments (student_id, class_entity_id, academic_year, semester, is_active, student_number, enrolled_by, created_at, updated_at) VALUES
+INSERT INTO student_class_assignments (student_id, class_id, academic_year, semester, is_active, student_number, enrolled_by, created_at, updated_at) VALUES
 -- Class 8A1 (Class ID: 1)
 (1, 1, 2024, '1', true, '01', 'Admin', '2024-09-01', '2024-09-01'),
 (2, 1, 2024, '1', true, '02', 'Admin', '2024-09-01', '2024-09-01'),
