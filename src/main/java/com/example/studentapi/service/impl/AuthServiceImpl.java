@@ -4,6 +4,7 @@ import com.example.studentapi.model.Teacher;
 import com.example.studentapi.repository.TeacherRepository;
 import com.example.studentapi.service.AuthService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import io.jsonwebtoken.*;
@@ -23,7 +24,9 @@ public class AuthServiceImpl implements AuthService {
     
     // In production, store this securely
     private final Key key = Keys.secretKeyFor(SignatureAlgorithm.HS256);
-    private final long EXPIRATION_TIME = 8 * 60 * 60 * 1000; // 8 hours
+
+    @Value("${jwt.expiration:300000}")
+    private long EXPIRATION_TIME;
 
     @Override
     public String authenticate(String username, String password) {
