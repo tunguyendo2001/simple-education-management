@@ -12,8 +12,12 @@ import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.validation.Valid;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/scores")
@@ -39,16 +43,374 @@ public class ScoreController {
         return ResponseEntity.ok(score);
     }
 
+    // SINGLE SCORE OPERATIONS
     @PostMapping
-    public ResponseEntity<Score> createScore(@RequestBody Score score) {
-        Score createdScore = scoreService.save(score);
-        return ResponseEntity.status(201).body(createdScore);
+    @Operation(summary = "Create a single score")
+    public ResponseEntity<?> createScore(@Valid @RequestBody Score score, HttpServletRequest request) {
+        try {
+            // Get teacher ID from request header
+            String teacherIdHeader = request.getHeader("Teacher-Id");
+            if (teacherIdHeader == null || teacherIdHeader.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("error", "Teacher ID is required in header"));
+            }
+            
+            Long teacherId = Long.parseLong(teacherIdHeader);
+            
+            // Set teacher ID if not provided
+            if (score.getTeacherId() == null) {
+                score.setTeacherId(teacherId);
+            }
+            
+            // Verify teacher can only create scores for their own classes
+            if (!score.getTeacherId().equals(teacherId)) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(Map.of("error", "Teachers can only create scores for their own classes"));
+            }
+            
+            // Validate teacher has access to the class
+            if (score.getClassName() != null && !scoreServiceImpl.teacherHasAccessToClass(teacherId, score.getClassName())) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(Map.of("error", "Teacher does not have access to this class"));
+            }
+            
+            // Auto-calculate TBM if not provided
+            if (score.getTbm() == null || score.getTbm() == 0.0) {
+                score.calculateTbm();
+            }
+            
+            Score createdScore = scoreService.save(score);
+            return ResponseEntity.status(201).body(createdScore);
+            
+        } catch (NumberFormatException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(Map.of("error", "Invalid Teacher ID format"));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(Map.of("error", "Error creating score: " + e.getMessage()));
+        }
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Score> updateScore(@PathVariable Long id, @RequestBody Score score) {
-        Score updatedScore = scoreService.update(id, score);
-        return ResponseEntity.ok(updatedScore);
+    @Operation(summary = "Update a single score")
+    public ResponseEntity<?> updateScore(@PathVariable Long id, @Valid @RequestBody Score score, HttpServletRequest request) {
+        try {
+            // Check if score exists
+            Score existingScore = scoreService.findById(id);
+            if (existingScore == null) {
+                return ResponseEntity.notFound().build();
+            }
+            
+            // Get teacher ID from request header
+            String teacherIdHeader = request.getHeader("Teacher-Id");
+            if (teacherIdHeader == null || teacherIdHeader.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("error", "Teacher ID is required in header"));
+            }
+            
+            Long teacherId = Long.parseLong(teacherIdHeader);
+            
+            // Verify teacher can only update their own scores
+            if (!existingScore.getTeacherId().equals(teacherId)) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(Map.of("error", "Teachers can only update their own scores"));
+            }
+            
+            // Auto-calculate TBM if scores changed
+            score.calculateTbm();
+            
+            Score updatedScore = scoreService.update(id, score);
+            return ResponseEntity.ok(updatedScore);
+            
+        } catch (NumberFormatException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(Map.of("error", "Invalid Teacher ID format"));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(Map.of("error", "Error updating score: " + e.getMessage()));
+        }
+    }
+
+    // BATCH OPERATIONS
+    @PostMapping("/batch")
+    @Operation(summary = "Create multiple scores", 
+               description = "Create multiple scores in a single request. All scores must belong to the requesting teacher.")
+    public ResponseEntity<?> createScores(@Valid @RequestBody List<Score> scores, HttpServletRequest request) {
+        try {
+            if (scores == null || scores.isEmpty()) {
+                return ResponseEntity.badRequest()
+                    .body(Map.of("error", "Score list cannot be empty"));
+            }
+            
+            // Get teacher ID from request header
+            String teacherIdHeader = request.getHeader("Teacher-Id");
+            if (teacherIdHeader == null || teacherIdHeader.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("error", "Teacher ID is required in header"));
+            }
+            
+            Long teacherId = Long.parseLong(teacherIdHeader);
+            
+            List<Score> createdScores = new ArrayList<>();
+            List<String> errors = new ArrayList<>();
+            
+            for (int i = 0; i < scores.size(); i++) {
+                Score score = scores.get(i);
+                
+                try {
+                    // Set teacher ID if not provided
+                    if (score.getTeacherId() == null) {
+                        score.setTeacherId(teacherId);
+                    }
+                    
+                    // Verify teacher can only create scores for their own classes
+                    if (!score.getTeacherId().equals(teacherId)) {
+                        errors.add("Score " + (i + 1) + ": Teachers can only create scores for their own classes");
+                        continue;
+                    }
+                    
+                    // Validate teacher has access to the class
+                    if (score.getClassName() != null && !scoreServiceImpl.teacherHasAccessToClass(teacherId, score.getClassName())) {
+                        errors.add("Score " + (i + 1) + ": Teacher does not have access to class " + score.getClassName());
+                        continue;
+                    }
+                    
+                    // Auto-calculate TBM
+                    score.calculateTbm();
+                    
+                    Score createdScore = scoreService.save(score);
+                    createdScores.add(createdScore);
+                    
+                } catch (Exception e) {
+                    errors.add("Score " + (i + 1) + ": " + e.getMessage());
+                }
+            }
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("created", createdScores);
+            response.put("createdCount", createdScores.size());
+            response.put("totalCount", scores.size());
+            
+            if (!errors.isEmpty()) {
+                response.put("errors", errors);
+                response.put("errorCount", errors.size());
+                return ResponseEntity.status(HttpStatus.PARTIAL_CONTENT).body(response);
+            }
+            
+            return ResponseEntity.status(HttpStatus.CREATED).body(response);
+            
+        } catch (NumberFormatException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(Map.of("error", "Invalid Teacher ID format"));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(Map.of("error", "Error creating scores: " + e.getMessage()));
+        }
+    }
+
+    @PutMapping("/batch")
+    @Operation(summary = "Update multiple scores", 
+               description = "Update multiple scores in a single request. All scores must belong to the requesting teacher.")
+    public ResponseEntity<?> updateScores(@Valid @RequestBody List<Score> scores, HttpServletRequest request) {
+        try {
+            if (scores == null || scores.isEmpty()) {
+                return ResponseEntity.badRequest()
+                    .body(Map.of("error", "Score list cannot be empty"));
+            }
+            
+            // Get teacher ID from request header
+            String teacherIdHeader = request.getHeader("Teacher-Id");
+            if (teacherIdHeader == null || teacherIdHeader.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("error", "Teacher ID is required in header"));
+            }
+            
+            Long teacherId = Long.parseLong(teacherIdHeader);
+            
+            List<Score> updatedScores = new ArrayList<>();
+            List<String> errors = new ArrayList<>();
+            
+            for (int i = 0; i < scores.size(); i++) {
+                Score score = scores.get(i);
+                
+                try {
+                    if (score.getId() == null) {
+                        errors.add("Score " + (i + 1) + ": Score ID is required for updates");
+                        continue;
+                    }
+                    
+                    // Check if score exists
+                    Score existingScore = scoreService.findById(score.getId());
+                    if (existingScore == null) {
+                        errors.add("Score " + (i + 1) + ": Score not found with ID " + score.getId());
+                        continue;
+                    }
+                    
+                    // Verify teacher can only update their own scores
+                    if (!existingScore.getTeacherId().equals(teacherId)) {
+                        errors.add("Score " + (i + 1) + ": Teachers can only update their own scores");
+                        continue;
+                    }
+                    
+                    // Auto-calculate TBM
+                    score.calculateTbm();
+                    
+                    Score updatedScore = scoreService.update(score.getId(), score);
+                    updatedScores.add(updatedScore);
+                    
+                } catch (Exception e) {
+                    errors.add("Score " + (i + 1) + ": " + e.getMessage());
+                }
+            }
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("updated", updatedScores);
+            response.put("updatedCount", updatedScores.size());
+            response.put("totalCount", scores.size());
+            
+            if (!errors.isEmpty()) {
+                response.put("errors", errors);
+                response.put("errorCount", errors.size());
+                return ResponseEntity.status(HttpStatus.PARTIAL_CONTENT).body(response);
+            }
+            
+            return ResponseEntity.ok(response);
+            
+        } catch (NumberFormatException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(Map.of("error", "Invalid Teacher ID format"));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(Map.of("error", "Error updating scores: " + e.getMessage()));
+        }
+    }
+
+    // UPSERT OPERATION (Create or Update)
+    @PostMapping("/upsert")
+    @Operation(summary = "Create or update scores", 
+               description = "Create new scores or update existing ones. Use this when you're not sure if scores already exist.")
+    public ResponseEntity<?> upsertScores(@Valid @RequestBody List<Score> scores, HttpServletRequest request) {
+        try {
+            if (scores == null || scores.isEmpty()) {
+                return ResponseEntity.badRequest()
+                    .body(Map.of("error", "Score list cannot be empty"));
+            }
+            
+            // Get teacher ID from request header
+            String teacherIdHeader = request.getHeader("Teacher-Id");
+            if (teacherIdHeader == null || teacherIdHeader.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("error", "Teacher ID is required in header"));
+            }
+            
+            Long teacherId = Long.parseLong(teacherIdHeader);
+            
+            List<Score> createdScores = new ArrayList<>();
+            List<Score> updatedScores = new ArrayList<>();
+            List<String> errors = new ArrayList<>();
+            
+            for (int i = 0; i < scores.size(); i++) {
+                Score score = scores.get(i);
+                
+                try {
+                    // Set teacher ID if not provided
+                    if (score.getTeacherId() == null) {
+                        score.setTeacherId(teacherId);
+                    }
+                    
+                    // Verify teacher can only work with their own scores
+                    if (!score.getTeacherId().equals(teacherId)) {
+                        errors.add("Score " + (i + 1) + ": Teachers can only work with their own scores");
+                        continue;
+                    }
+                    
+                    // Auto-calculate TBM
+                    score.calculateTbm();
+                    
+                    if (score.getId() != null) {
+                        // Update existing score
+                        Score existingScore = scoreService.findById(score.getId());
+                        if (existingScore != null && existingScore.getTeacherId().equals(teacherId)) {
+                            Score updatedScore = scoreService.update(score.getId(), score);
+                            updatedScores.add(updatedScore);
+                        } else {
+                            errors.add("Score " + (i + 1) + ": Cannot update - score not found or access denied");
+                        }
+                    } else {
+                        // Create new score
+                        if (score.getClassName() != null && !scoreServiceImpl.teacherHasAccessToClass(teacherId, score.getClassName())) {
+                            errors.add("Score " + (i + 1) + ": Teacher does not have access to class " + score.getClassName());
+                            continue;
+                        }
+                        
+                        Score createdScore = scoreService.save(score);
+                        createdScores.add(createdScore);
+                    }
+                    
+                } catch (Exception e) {
+                    errors.add("Score " + (i + 1) + ": " + e.getMessage());
+                }
+            }
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("created", createdScores);
+            response.put("updated", updatedScores);
+            response.put("createdCount", createdScores.size());
+            response.put("updatedCount", updatedScores.size());
+            response.put("totalCount", scores.size());
+            
+            if (!errors.isEmpty()) {
+                response.put("errors", errors);
+                response.put("errorCount", errors.size());
+                return ResponseEntity.status(HttpStatus.PARTIAL_CONTENT).body(response);
+            }
+            
+            return ResponseEntity.ok(response);
+            
+        } catch (NumberFormatException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(Map.of("error", "Invalid Teacher ID format"));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(Map.of("error", "Error processing scores: " + e.getMessage()));
+        }
+    }
+
+    @DeleteMapping("/{id}")
+    @Operation(summary = "Delete a score")
+    public ResponseEntity<?> deleteScore(@PathVariable Long id, HttpServletRequest request) {
+        try {
+            // Check if score exists
+            Score existingScore = scoreService.findById(id);
+            if (existingScore == null) {
+                return ResponseEntity.notFound().build();
+            }
+            
+            // Get teacher ID from request header
+            String teacherIdHeader = request.getHeader("Teacher-Id");
+            if (teacherIdHeader == null || teacherIdHeader.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("error", "Teacher ID is required in header"));
+            }
+            
+            Long teacherId = Long.parseLong(teacherIdHeader);
+            
+            // Verify teacher can only delete their own scores
+            if (!existingScore.getTeacherId().equals(teacherId)) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(Map.of("error", "Teachers can only delete their own scores"));
+            }
+            
+            scoreService.delete(id);
+            return ResponseEntity.noContent().build();
+            
+        } catch (NumberFormatException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(Map.of("error", "Invalid Teacher ID format"));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(Map.of("error", "Error deleting score: " + e.getMessage()));
+        }
     }
 
     @DeleteMapping("/{id}")
