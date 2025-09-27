@@ -4,7 +4,10 @@ import com.example.studentapi.model.Score;
 import com.example.studentapi.service.ScoreService;
 import com.example.studentapi.service.impl.ScoreServiceImpl;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.enums.ParameterIn;
+import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import io.swagger.v3.oas.annotations.Parameter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -43,98 +46,15 @@ public class ScoreController {
         return ResponseEntity.ok(score);
     }
 
-    // SINGLE SCORE OPERATIONS
-    @PostMapping
-    @Operation(summary = "Create a single score")
-    public ResponseEntity<?> createScore(@Valid @RequestBody Score score, HttpServletRequest request) {
-        try {
-            // Get teacher ID from request header
-            String teacherIdHeader = request.getHeader("Teacher-Id");
-            if (teacherIdHeader == null || teacherIdHeader.isEmpty()) {
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(Map.of("error", "Teacher ID is required in header"));
-            }
-            
-            Long teacherId = Long.parseLong(teacherIdHeader);
-            
-            // Set teacher ID if not provided
-            if (score.getTeacherId() == null) {
-                score.setTeacherId(teacherId);
-            }
-            
-            // Verify teacher can only create scores for their own classes
-            if (!score.getTeacherId().equals(teacherId)) {
-                return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                    .body(Map.of("error", "Teachers can only create scores for their own classes"));
-            }
-            
-            // Validate teacher has access to the class
-            if (score.getClassName() != null && !scoreServiceImpl.teacherHasAccessToClass(teacherId, score.getClassName())) {
-                return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                    .body(Map.of("error", "Teacher does not have access to this class"));
-            }
-            
-            // Auto-calculate TBM if not provided
-            if (score.getTbm() == null || score.getTbm() == 0.0) {
-                score.calculateTbm();
-            }
-            
-            Score createdScore = scoreService.save(score);
-            return ResponseEntity.status(201).body(createdScore);
-            
-        } catch (NumberFormatException e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(Map.of("error", "Invalid Teacher ID format"));
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(Map.of("error", "Error creating score: " + e.getMessage()));
-        }
-    }
-
-    @PutMapping("/{id}")
-    @Operation(summary = "Update a single score")
-    public ResponseEntity<?> updateScore(@PathVariable Long id, @Valid @RequestBody Score score, HttpServletRequest request) {
-        try {
-            // Check if score exists
-            Score existingScore = scoreService.findById(id);
-            if (existingScore == null) {
-                return ResponseEntity.notFound().build();
-            }
-            
-            // Get teacher ID from request header
-            String teacherIdHeader = request.getHeader("Teacher-Id");
-            if (teacherIdHeader == null || teacherIdHeader.isEmpty()) {
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(Map.of("error", "Teacher ID is required in header"));
-            }
-            
-            Long teacherId = Long.parseLong(teacherIdHeader);
-            
-            // Verify teacher can only update their own scores
-            if (!existingScore.getTeacherId().equals(teacherId)) {
-                return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                    .body(Map.of("error", "Teachers can only update their own scores"));
-            }
-            
-            // Auto-calculate TBM if scores changed
-            score.calculateTbm();
-            
-            Score updatedScore = scoreService.update(id, score);
-            return ResponseEntity.ok(updatedScore);
-            
-        } catch (NumberFormatException e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(Map.of("error", "Invalid Teacher ID format"));
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(Map.of("error", "Error updating score: " + e.getMessage()));
-        }
-    }
-
     // BATCH OPERATIONS
-    @PostMapping("/batch")
+    @PostMapping
     @Operation(summary = "Create multiple scores", 
-               description = "Create multiple scores in a single request. All scores must belong to the requesting teacher.")
+               description = "Create multiple scores in a single request. All scores must belong to the requesting teacher.",
+               parameters = {
+                    @Parameter(name = "Teacher-Id", in = ParameterIn.HEADER, 
+                               description = "Teacher identifier", required = true,
+                               schema = @Schema(type = "string"))
+               })
     public ResponseEntity<?> createScores(@Valid @RequestBody List<Score> scores, HttpServletRequest request) {
         try {
             if (scores == null || scores.isEmpty()) {
@@ -208,7 +128,7 @@ public class ScoreController {
         }
     }
 
-    @PutMapping("/batch")
+    @PutMapping
     @Operation(summary = "Update multiple scores", 
                description = "Update multiple scores in a single request. All scores must belong to the requesting teacher.")
     public ResponseEntity<?> updateScores(@Valid @RequestBody List<Score> scores, HttpServletRequest request) {
@@ -413,11 +333,11 @@ public class ScoreController {
         }
     }
 
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteScore(@PathVariable Long id) {
-        scoreService.delete(id);
-        return ResponseEntity.noContent().build();
-    }
+    // @DeleteMapping("/{id}")
+    // public ResponseEntity<Void> deleteScore(@PathVariable Long id) {
+    //     scoreService.delete(id);
+    //     return ResponseEntity.noContent().build();
+    // }
 
     // Secured endpoint to get scores by class name, year, and semester
     @GetMapping("/class/{className}/year/{year}/semester/{semester}")
@@ -494,11 +414,16 @@ public class ScoreController {
     // Secured export endpoint
     @GetMapping("/export")
     @Operation(summary = "Export scores to Excel", 
-               description = "Export scores to Excel file. Teachers can only export their own classes.")
-    public ResponseEntity<?> exportExcel(HttpServletResponse response, HttpServletRequest request) {
+               description = "Export scores to Excel file. Teachers can only export their own classes.",
+               parameters = {
+                    @Parameter(name = "Teacher-Id", in = ParameterIn.HEADER, 
+                               description = "Teacher identifier", required = true,
+                               schema = @Schema(type = "string"))
+               })
+    public ResponseEntity<?> exportExcel(HttpServletResponse response, @RequestHeader("Teacher-Id") String teacherIdHeader) {
         
-        // Get teacher ID from request header
-        String teacherIdHeader = request.getHeader("Teacher-Id");
+        // // Get teacher ID from request header
+        // String teacherIdHeader = request.getHeader("Teacher-Id");
         
         if (teacherIdHeader == null || teacherIdHeader.isEmpty()) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)

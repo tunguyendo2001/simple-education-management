@@ -15,7 +15,7 @@ services:
     ports:
       - "3306:3306"
     volumes:
-      - /tmp/education_mysql/mysql_data:/var/lib/mysql
+      - ../education_mysql/mysql_data:/var/lib/mysql
       - ./docker/mysql/init:/docker-entrypoint-initdb.d
       - ./docker/mysql/conf:/etc/mysql/conf.d
     networks:
@@ -73,8 +73,8 @@ services:
   #   ports:
   #     - "8080:8080"
   #   volumes:
-  #     - /tmp/education_app/app_uploads:/app/uploads
-  #     - /tmp/education_app/app_logs:/app/logs
+  #     - ../education_app/app_uploads:/app/uploads
+  #     - ../education_app/app_logs:/app/logs
   #   networks:
   #     - education_network
   #   healthcheck:
@@ -97,7 +97,7 @@ services:
   #   volumes:
   #     - ./docker/nginx/nginx.conf:/etc/nginx/nginx.conf
   #     - ./docker/nginx/conf.d:/etc/nginx/conf.d
-  #     - /tmp/education_nginx/nginx_logs:/var/log/nginx
+  #     - ../education_nginx/nginx_logs:/var/log/nginx
   #   depends_on:
   #     - app
   #   networks:
