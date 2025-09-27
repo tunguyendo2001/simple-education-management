@@ -64,9 +64,9 @@ public interface ScoreRepository extends JpaRepository<Score, Long> {
     
     // ========== SECURITY QUERIES ==========
     
-    // Check if teacher has access to specific class
-    @Query("SELECT COUNT(s) > 0 FROM Score s WHERE s.teacherId = :teacherId AND s.className = :className")
-    boolean teacherHasAccessToClass(@Param("teacherId") Long teacherId, @Param("className") String className);
+    // // Check if teacher has access to specific class
+    // @Query("SELECT COUNT(s) > 0 FROM Score s WHERE s.teacherId = :teacherId AND s.className = :className")
+    // boolean teacherHasAccessToClass(@Param("teacherId") Long teacherId, @Param("className") String className);
     
     // Find score by ID and teacher ID for authorization
     @Query("SELECT s FROM Score s WHERE s.id = :scoreId AND s.teacherId = :teacherId")

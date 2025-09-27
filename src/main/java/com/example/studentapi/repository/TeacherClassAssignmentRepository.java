@@ -22,7 +22,7 @@ public interface TeacherClassAssignmentRepository extends JpaRepository<TeacherC
     List<TeacherClassAssignment> findBySchoolClassIdAndIsActive(Long schoolClassId, Boolean isActive);
     
     // Check if teacher has access to class (using custom query to be explicit)
-    @Query("SELECT COUNT(tca) > 0 FROM TeacherClassAssignment tca WHERE tca.teacherId = :teacherId AND tca.schoolClassId = :schoolClassId AND tca.isActive = true")
+    @Query("SELECT COUNT(tca) > 0 FROM TeacherClassAssignment tca WHERE tca.teacherId = :teacherId AND tca.schoolClass.id = :schoolClassId AND tca.isActive = true")
     boolean existsByTeacherIdAndSchoolClassIdAndIsActive(@Param("teacherId") Long teacherId, @Param("schoolClassId") Long schoolClassId);
     
     // Get all classes for a teacher
@@ -30,7 +30,7 @@ public interface TeacherClassAssignmentRepository extends JpaRepository<TeacherC
     List<TeacherClassAssignment> findActiveAssignmentsByTeacherId(@Param("teacherId") Long teacherId);
     
     // Get all teachers for a class
-    @Query("SELECT tca FROM TeacherClassAssignment tca WHERE tca.schoolClassId = :schoolClassId AND tca.isActive = true")
+    @Query("SELECT tca FROM TeacherClassAssignment tca WHERE tca.schoolClass.id = :schoolClassId AND tca.isActive = true")
     List<TeacherClassAssignment> findActiveAssignmentsBySchoolClassId(@Param("schoolClassId") Long schoolClassId);
 
     @Query("SELECT tca FROM TeacherClassAssignment tca JOIN tca.schoolClass c WHERE tca.teacherId = :teacherId AND c.className = :className AND tca.academicYear = :academicYear AND (tca.semester = :semester OR tca.semester = 'BOTH') AND tca.isActive = true")
@@ -42,7 +42,7 @@ public interface TeacherClassAssignmentRepository extends JpaRepository<TeacherC
     );
     
     // Use schoolClassId instead of classId
-    @Query("SELECT tca FROM TeacherClassAssignment tca WHERE tca.teacherId = :teacherId AND tca.schoolClassId = :schoolClassId")
+    @Query("SELECT tca FROM TeacherClassAssignment tca WHERE tca.teacherId = :teacherId AND tca.schoolClass.id = :schoolClassId")
     List<TeacherClassAssignment> findByTeacherIdAndSchoolClassIdQuery(@Param("teacherId") Long teacherId, @Param("schoolClassId") Long schoolClassId);
     
     @Query("SELECT tca FROM TeacherClassAssignment tca WHERE tca.teacherId = :teacherId AND tca.academicYear = :academicYear AND (tca.semester = :semester OR tca.semester = 'BOTH') AND tca.isActive = true")
@@ -74,6 +74,16 @@ public interface TeacherClassAssignmentRepository extends JpaRepository<TeacherC
         @Param("studentId") Long studentId, 
         @Param("schoolClassId") Long schoolClassId, 
         @Param("academicYear") int academicYear, 
+        @Param("semester") String semester
+    );
+
+    // Check if teacher has access to specific class
+    @Query("SELECT COUNT(tca) > 0 FROM TeacherClassAssignment tca JOIN tca.schoolClass c WHERE tca.teacherId = :teacherId AND c.className = :className AND tca.subject = :subject AND tca.academicYear = :academicYear AND (tca.semester = :semester OR tca.semester = 'BOTH') AND tca.isActive = true")
+    boolean teacherHasAccessToClass(
+        @Param("teacherId") Long teacherId, 
+        @Param("className") String className,
+        @Param("subject") String subject,
+        @Param("academicYear") Integer academicYear,
         @Param("semester") String semester
     );
 }

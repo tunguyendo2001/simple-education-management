@@ -2,6 +2,7 @@ package com.example.studentapi.service.impl;
 
 import com.example.studentapi.model.Score;
 import com.example.studentapi.repository.ScoreRepository;
+import com.example.studentapi.repository.TeacherClassAssignmentRepository;
 import com.example.studentapi.service.ScoreService;
 import com.example.studentapi.service.SchoolClassService;
 import org.apache.poi.ss.usermodel.*;
@@ -24,6 +25,9 @@ public class ScoreServiceImpl implements ScoreService {
 
     @Autowired
     private ScoreRepository scoreRepository;
+
+    @Autowired
+    private TeacherClassAssignmentRepository teacherClassAssignmentRepository;
     
     @Autowired
     private SchoolClassService classService;
@@ -373,14 +377,14 @@ public class ScoreServiceImpl implements ScoreService {
     }
 
     @Override
-    public boolean teacherHasAccessToClass(Long teacherId, String className) {
-        return scoreRepository.teacherHasAccessToClass(teacherId, className);
+    public boolean teacherHasAccessToClass(Long teacherId, String className, String subject, Integer academicYear, String semester) {
+        return teacherClassAssignmentRepository.teacherHasAccessToClass(teacherId, className, subject, academicYear, semester);
     }
 
     @Override
-    public boolean teacherCanCreateScoreForStudent(Long teacherId, Long studentId, String className) {
+    public boolean teacherCanCreateScoreForStudent(Long teacherId, Long studentId, String className, String subject, Integer academicYear, String semester) {
         // Check if teacher has access to the class
-        if (!teacherHasAccessToClass(teacherId, className)) {
+        if (!teacherHasAccessToClass(teacherId, className, subject, academicYear, semester)) {
             return false;
         }
         

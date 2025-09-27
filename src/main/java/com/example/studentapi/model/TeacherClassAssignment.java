@@ -20,9 +20,6 @@ public class TeacherClassAssignment {
 
     @Column(name = "teacher_id", nullable = false)
     private Long teacherId;
-
-    @Column(name = "class_id", nullable = false)
-    private Long schoolClassId;
     
     // Add missing fields
     @Column(nullable = false, length = 100)
@@ -59,15 +56,11 @@ public class TeacherClassAssignment {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "teacher_id", insertable = false, updatable = false)
     private Teacher teacher;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "class_id", insertable = false, updatable = false)
-    private SchoolClass schoolClass;
     
     // Add classEntity for backward compatibility
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "class_id", insertable = false, updatable = false)
-    private SchoolClass classEntity;
+    @JoinColumn(name = "class_id", nullable = false)
+    private SchoolClass schoolClass;
     
     // Enum for assignment roles
     public enum AssignmentRole {
@@ -150,6 +143,5 @@ public class TeacherClassAssignment {
     
     public void setClassEntity(SchoolClass classEntity) {
         this.schoolClass = classEntity;
-        this.schoolClassId = classEntity != null ? classEntity.getId() : null;
     }
 }

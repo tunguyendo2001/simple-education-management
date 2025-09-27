@@ -55,15 +55,13 @@ public class ScoreController {
                                description = "Teacher identifier", required = true,
                                schema = @Schema(type = "string"))
                })
-    public ResponseEntity<?> createScores(@Valid @RequestBody List<Score> scores, HttpServletRequest request) {
+    public ResponseEntity<?> createScores(@Valid @RequestBody List<Score> scores, @RequestHeader("Teacher-Id") String teacherIdHeader, HttpServletRequest request) {
         try {
             if (scores == null || scores.isEmpty()) {
                 return ResponseEntity.badRequest()
                     .body(Map.of("error", "Score list cannot be empty"));
             }
             
-            // Get teacher ID from request header
-            String teacherIdHeader = request.getHeader("Teacher-Id");
             if (teacherIdHeader == null || teacherIdHeader.isEmpty()) {
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                     .body(Map.of("error", "Teacher ID is required in header"));
@@ -90,7 +88,7 @@ public class ScoreController {
                     }
                     
                     // Validate teacher has access to the class
-                    if (score.getClassName() != null && !scoreServiceImpl.teacherHasAccessToClass(teacherId, score.getClassName())) {
+                    if (score.getClassName() != null && !scoreServiceImpl.teacherHasAccessToClass(teacherId, score.getClassName(), score.getSubject(), score.getYear(), score.getSemester())) {
                         errors.add("Score " + (i + 1) + ": Teacher does not have access to class " + score.getClassName());
                         continue;
                     }
@@ -130,16 +128,19 @@ public class ScoreController {
 
     @PutMapping
     @Operation(summary = "Update multiple scores", 
-               description = "Update multiple scores in a single request. All scores must belong to the requesting teacher.")
-    public ResponseEntity<?> updateScores(@Valid @RequestBody List<Score> scores, HttpServletRequest request) {
+               description = "Update multiple scores in a single request. All scores must belong to the requesting teacher.",
+               parameters = {
+                    @Parameter(name = "Teacher-Id", in = ParameterIn.HEADER, 
+                               description = "Teacher identifier", required = true,
+                               schema = @Schema(type = "string"))
+               })
+    public ResponseEntity<?> updateScores(@Valid @RequestBody List<Score> scores, @RequestHeader("Teacher-Id") String teacherIdHeader, HttpServletRequest request) {
         try {
             if (scores == null || scores.isEmpty()) {
                 return ResponseEntity.badRequest()
                     .body(Map.of("error", "Score list cannot be empty"));
             }
             
-            // Get teacher ID from request header
-            String teacherIdHeader = request.getHeader("Teacher-Id");
             if (teacherIdHeader == null || teacherIdHeader.isEmpty()) {
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                     .body(Map.of("error", "Teacher ID is required in header"));
@@ -258,7 +259,7 @@ public class ScoreController {
                         }
                     } else {
                         // Create new score
-                        if (score.getClassName() != null && !scoreServiceImpl.teacherHasAccessToClass(teacherId, score.getClassName())) {
+                        if (score.getClassName() != null && !scoreServiceImpl.teacherHasAccessToClass(teacherId, score.getClassName(), score.getSubject(), score.getYear(), score.getSemester())) {
                             errors.add("Score " + (i + 1) + ": Teacher does not have access to class " + score.getClassName());
                             continue;
                         }
@@ -340,13 +341,14 @@ public class ScoreController {
     // }
 
     // Secured endpoint to get scores by class name, year, and semester
-    @GetMapping("/class/{className}/year/{year}/semester/{semester}")
-    @Operation(summary = "Get scores by class, year and semester", 
-               description = "Retrieve scores for a specific class, year and semester. Teachers can only access their own classes.")
+    @GetMapping("/class/{className}/year/{year}/semester/{semester}/subject/{subject}")
+    @Operation(summary = "Get scores by class, year, semester and subject", 
+               description = "Retrieve scores for a specific class, year, semester and subject. Teachers can only access their own classes.")
     public ResponseEntity<?> getScoresByClassYearSemester(
             @PathVariable String className,
             @PathVariable int year,
             @PathVariable String semester,
+            @PathVariable String subject,
             HttpServletRequest request) {
         
         // Get teacher ID from request header or session
@@ -363,7 +365,7 @@ public class ScoreController {
             Long teacherId = Long.parseLong(teacherIdHeader);
             
             // Check if teacher has access to this class
-            if (!scoreServiceImpl.teacherHasAccessToClass(teacherId, className)) {
+            if (!scoreServiceImpl.teacherHasAccessToClass(teacherId, className, subject, year, semester)) {
                 return ResponseEntity.status(HttpStatus.FORBIDDEN)
                     .body("Teacher does not have access to this class");
             }
@@ -420,7 +422,7 @@ public class ScoreController {
                                description = "Teacher identifier", required = true,
                                schema = @Schema(type = "string"))
                })
-    public ResponseEntity<?> exportExcel(HttpServletResponse response, @RequestHeader("Teacher-Id") String teacherIdHeader) {
+    public ResponseEntity<?> exportExcel(HttpServletResponse response, @RequestHeader("Teacher-Id") String teacherIdHeader, HttpServletRequest request) {
         
         // // Get teacher ID from request header
         // String teacherIdHeader = request.getHeader("Teacher-Id");
@@ -474,45 +476,48 @@ public class ScoreController {
         return ResponseEntity.ok(scores);
     }
 
-    @GetMapping("/class/{className}")
-    @Operation(summary = "Get scores by class name", 
-               description = "Retrieve all scores for a specific class. Teachers can only access their own classes.")
-    public ResponseEntity<?> getScoresByClass(
-            @PathVariable String className,
-            HttpServletRequest request) {
+    // @GetMapping("/class/{className}")
+    // @Operation(summary = "Get scores by class name", 
+    //            description = "Retrieve all scores for a specific class. Teachers can only access their own classes.")
+    // public ResponseEntity<?> getScoresByClass(
+    //         @PathVariable String className,
+    //         HttpServletRequest request) {
         
-        // Get teacher ID from request header
-        String teacherIdHeader = request.getHeader("Teacher-Id");
+    //     // Get teacher ID from request header
+    //     String teacherIdHeader = request.getHeader("Teacher-Id");
         
-        if (teacherIdHeader == null || teacherIdHeader.isEmpty()) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                .body("Teacher ID is required in header");
-        }
+    //     if (teacherIdHeader == null || teacherIdHeader.isEmpty()) {
+    //         return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+    //             .body("Teacher ID is required in header");
+    //     }
         
-        try {
-            Long teacherId = Long.parseLong(teacherIdHeader);
+    //     try {
+    //         Long teacherId = Long.parseLong(teacherIdHeader);
             
-            // Check if teacher has access to this class
-            if (!scoreServiceImpl.teacherHasAccessToClass(teacherId, className)) {
-                return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                    .body("Teacher does not have access to this class");
-            }
+    //         // Check if teacher has access to this class
+    //         if (!scoreServiceImpl.teacherHasAccessToClass(teacherId, className)) {
+    //             return ResponseEntity.status(HttpStatus.FORBIDDEN)
+    //                 .body("Teacher does not have access to this class");
+    //         }
             
-            List<Score> scores = scoreService.findByClassName(className);
-            return ResponseEntity.ok(scores);
+    //         List<Score> scores = scoreService.findByClassName(className);
+    //         return ResponseEntity.ok(scores);
             
-        } catch (NumberFormatException e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body("Invalid Teacher ID format");
-        }
-    }
+    //     } catch (NumberFormatException e) {
+    //         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+    //             .body("Invalid Teacher ID format");
+    //     }
+    // }
 
     // Utility endpoint to check teacher access to class
-    @GetMapping("/check-access/{className}")
+    @GetMapping("/check-access/{className}/{year}/{semester}/{subject}")
     @Operation(summary = "Check teacher access to class", 
                description = "Check if current teacher has access to a specific class")
     public ResponseEntity<?> checkTeacherAccess(
             @PathVariable String className,
+            @PathVariable int year,
+            @PathVariable String semester,
+            @PathVariable String subject,
             HttpServletRequest request) {
         
         String teacherIdHeader = request.getHeader("Teacher-Id");
@@ -524,7 +529,7 @@ public class ScoreController {
         
         try {
             Long teacherId = Long.parseLong(teacherIdHeader);
-            boolean hasAccess = scoreServiceImpl.teacherHasAccessToClass(teacherId, className);
+            boolean hasAccess = scoreServiceImpl.teacherHasAccessToClass(teacherId, className, subject, year, semester);
             
             return ResponseEntity.ok().body(new AccessCheckResponse(hasAccess, 
                 hasAccess ? "Teacher has access to class" : "Teacher does not have access to class"));

@@ -49,7 +49,7 @@ public class Score {
     
     @NotNull(message = "Year is required")
     @Column(nullable = false)
-    private int year;
+    private Integer year;
     
     // Store as comma-separated string in database
     @Column(name = "ddgtx", columnDefinition = "TEXT")
@@ -219,8 +219,8 @@ public class Score {
     public String getSemester() { return semester; }
     public void setSemester(String semester) { this.semester = semester; }
     
-    public int getYear() { return year; }
-    public void setYear(int year) { this.year = year; }
+    public Integer getYear() { return year; }
+    public void setYear(Integer year) { this.year = year; }
     
     public String getComment() { return comment; }
     public void setComment(String comment) { this.comment = comment; }

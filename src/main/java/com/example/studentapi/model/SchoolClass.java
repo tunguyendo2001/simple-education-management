@@ -54,6 +54,10 @@ public class SchoolClass {
     @OneToMany(mappedBy = "schoolClass", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<TeacherClassAssignment> teacherAssignments;
 
+    // One-to-Many with StudentClassAssignment
+    @OneToMany(mappedBy = "classEntity", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<StudentClassAssignment> studentAssignments;
+
     // One-to-Many with Scores
     @OneToMany(mappedBy = "schoolClass", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<Score> scores;

@@ -45,8 +45,8 @@ public interface ScoreService {
     
     // Security methods
     boolean teacherHasAccessToScore(Long teacherId, Long scoreId);
-    boolean teacherHasAccessToClass(Long teacherId, String className);
-    boolean teacherCanCreateScoreForStudent(Long teacherId, Long studentId, String className);
+    boolean teacherHasAccessToClass(Long teacherId, String className, String subject, Integer academicYear, String semester);
+    boolean teacherCanCreateScoreForStudent(Long teacherId, Long studentId, String className, String subject, Integer academicYear, String semester);
     
     // Statistical methods
     double getAverageScoreForClass(String className, String subject, int year, String semester);
