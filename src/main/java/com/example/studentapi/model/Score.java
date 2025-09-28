@@ -4,6 +4,8 @@ import lombok.Data;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import javax.persistence.*;
 import javax.validation.constraints.Max;
 import javax.validation.constraints.Min;
@@ -20,8 +22,8 @@ import java.util.stream.Collectors;
 @Table(name = "scores")
 public class Score {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    @Column(name = "id", length = 500)
+    private String id;
 
     @NotNull(message = "Student ID is required")
     @Column(name = "student_id")
@@ -53,7 +55,7 @@ public class Score {
     
     // Store as comma-separated string in database
     @Column(name = "ddgtx", columnDefinition = "TEXT")
-    private String ddgtxString;
+    private String ddgtx;
     
     @Min(value = 0, message = "Score must be between 0 and 10")
     @Max(value = 10, message = "Score must be between 0 and 10")
@@ -100,14 +102,80 @@ public class Score {
     @JoinColumn(name = "class_id", insertable = false, updatable = false)
     private SchoolClass schoolClass;
 
+    // Method to generate custom ID
+    @PrePersist
+    @PreUpdate
+    public void generateCustomId() {
+        if (id == null || id.trim().isEmpty()) {
+            this.id = generateScoreId();
+        }
+        
+        // Auto-calculate TBM
+        calculateTbm();
+        
+        // Auto-map className to classId if needed
+        if (classId == null && className != null) {
+            // This would require injecting ClassRepository or using static access
+            // We'll handle this in the service layer instead
+        }
+    }
+
+    /**
+     * Generate unique ID based on business logic
+     * Format: teacherId_studentId_className_subject_year_semester
+     */
+    public String generateScoreId() {
+        if (teacherId == null || studentId == null || className == null || 
+            subject == null || year == null || semester == null) {
+            throw new IllegalStateException("Required fields (teacherId/studentId/className/subject/year/semester) are missing");
+        }
+        
+        // Clean the strings to avoid issues with special characters
+        String cleanClassName = cleanString(className);
+        String cleanSubject = cleanString(subject);
+        
+        return String.format("%d_%d_%s_%s_%d_%s", 
+            teacherId, studentId, year, semester, cleanClassName, cleanSubject);
+    }
+
+    /**
+     * Clean string for use in ID (remove special characters, spaces, etc.)
+     */
+    private String cleanString(String input) {
+        if (input == null) return "";
+        // Remove Vietnamese diacritics and special characters, convert to lowercase
+        String cleaned = input
+            .toLowerCase()
+            .replaceAll("[àáạảãâầấậẩẫăằắặẳẵ]", "a")
+            .replaceAll("[èéẹẻẽêềếệểễ]", "e")
+            .replaceAll("[ìíịỉĩ]", "i")
+            .replaceAll("[òóọỏõôồốộổỗơờớợởỡ]", "o")
+            .replaceAll("[ùúụủũưừứựửữ]", "u")
+            .replaceAll("[ỳýỵỷỹ]", "y")
+            .replaceAll("[đ]", "d")
+            .replaceAll("[^a-zA-Z0-9]", "");
+        return cleaned;
+    }
+
+    // Static method to create score ID from parameters
+    public static String createScoreId(Long teacherId, Long studentId, String className, 
+                                      String subject, Integer year, String semester) {
+        String cleanClassName = className != null ? className.replaceAll("[^a-zA-Z0-9]", "").toLowerCase() : "";
+        String cleanSubject = subject != null ? subject.replaceAll("[^a-zA-Z0-9]", "").toLowerCase() : "";
+        
+        return String.format("%d_%d_%s_%s_%d_%s", 
+            teacherId, studentId, cleanClassName, cleanSubject, year, semester);
+    }
+
     // Transient getter and setter for List<Integer>
     @Transient
-    public List<Integer> getDdgtx() {
-        if (ddgtxString == null || ddgtxString.trim().isEmpty()) {
+    @JsonIgnore
+    public List<Integer> getDdgtxList() {
+        if (ddgtx == null || ddgtx.trim().isEmpty()) {
             return new ArrayList<>();
         }
         try {
-            return Arrays.stream(ddgtxString.split(","))
+            return Arrays.stream(ddgtx.split(","))
                     .map(String::trim)
                     .filter(s -> !s.isEmpty())
                     .map(Integer::parseInt)
@@ -118,11 +186,12 @@ public class Score {
     }
 
     @Transient
-    public void setDdgtx(List<Integer> ddgtx) {
+    @JsonIgnore
+    public void setDdgtxList(List<Integer> ddgtx) {
         if (ddgtx == null || ddgtx.isEmpty()) {
-            this.ddgtxString = "";
+            this.ddgtx = "";
         } else {
-            this.ddgtxString = ddgtx.stream()
+            this.ddgtx = ddgtx.stream()
                     .filter(score -> score >= 0 && score <= 10) // Validate scores
                     .map(String::valueOf)
                     .collect(Collectors.joining(","));
@@ -132,7 +201,7 @@ public class Score {
     // Helper method to calculate average of regular scores
     @Transient
     public double getAverageDdgtx() {
-        List<Integer> scores = getDdgtx();
+        List<Integer> scores = getDdgtxList();
         if (scores.isEmpty()) {
             return 0.0;
         }
@@ -168,6 +237,8 @@ public class Score {
         this.ddggk = 0;
         this.ddgck = 0;
         this.tbm = 0.0;
+        
+        this.id = generateScoreId();
     }
 
     // Getters and Setters (keeping existing ones and adding new ones)
@@ -203,7 +274,9 @@ public class Score {
         this.ddgck = ddgck;
     }
 
-    // Keep all existing getters and setters...
+    public String getId() { return id; }
+    public void setId(String id) { this.id = id; }
+
     public Long getStudentId() { return studentId; }
     public void setStudentId(Long studentId) { this.studentId = studentId; }
     
@@ -237,6 +310,6 @@ public class Score {
     public String getTeacherName() { return teacherName; }
     public void setTeacherName(String teacherName) { this.teacherName = teacherName; }
     
-    public String getDdgtxString() { return ddgtxString; }
-    public void setDdgtxString(String ddgtxString) { this.ddgtxString = ddgtxString; }
+    public String getDdgtx() { return ddgtx; }
+    public void setDdgtx(String ddgtx) { this.ddgtx = ddgtx; }
 }

@@ -41,7 +41,7 @@ public class ScoreController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Score> getScoreById(@PathVariable Long id) {
+    public ResponseEntity<Score> getScoreById(@PathVariable String id) {
         Score score = scoreService.findById(id);
         return ResponseEntity.ok(score);
     }
@@ -209,16 +209,19 @@ public class ScoreController {
     // UPSERT OPERATION (Create or Update)
     @PostMapping("/upsert")
     @Operation(summary = "Create or update scores", 
-               description = "Create new scores or update existing ones. Use this when you're not sure if scores already exist.")
-    public ResponseEntity<?> upsertScores(@Valid @RequestBody List<Score> scores, HttpServletRequest request) {
+               description = "Create new scores or update existing ones. Use this when you're not sure if scores already exist.",
+               parameters = {
+                    @Parameter(name = "Teacher-Id", in = ParameterIn.HEADER, 
+                               description = "Teacher identifier", required = true,
+                               schema = @Schema(type = "string"))
+               })
+    public ResponseEntity<?> upsertScores(@Valid @RequestBody List<Score> scores, @RequestHeader("Teacher-Id") String teacherIdHeader, HttpServletRequest request) {
         try {
             if (scores == null || scores.isEmpty()) {
                 return ResponseEntity.badRequest()
                     .body(Map.of("error", "Score list cannot be empty"));
             }
             
-            // Get teacher ID from request header
-            String teacherIdHeader = request.getHeader("Teacher-Id");
             if (teacherIdHeader == null || teacherIdHeader.isEmpty()) {
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                     .body(Map.of("error", "Teacher ID is required in header"));
@@ -299,7 +302,7 @@ public class ScoreController {
 
     @DeleteMapping("/{id}")
     @Operation(summary = "Delete a score")
-    public ResponseEntity<?> deleteScore(@PathVariable Long id, HttpServletRequest request) {
+    public ResponseEntity<?> deleteScore(@PathVariable String id, HttpServletRequest request) {
         try {
             // Check if score exists
             Score existingScore = scoreService.findById(id);

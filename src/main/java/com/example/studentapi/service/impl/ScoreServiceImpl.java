@@ -1,6 +1,8 @@
 package com.example.studentapi.service.impl;
 
+import com.example.studentapi.model.SchoolClass;
 import com.example.studentapi.model.Score;
+import com.example.studentapi.repository.ClassRepository;
 import com.example.studentapi.repository.ScoreRepository;
 import com.example.studentapi.repository.TeacherClassAssignmentRepository;
 import com.example.studentapi.service.ScoreService;
@@ -32,10 +34,13 @@ public class ScoreServiceImpl implements ScoreService {
     @Autowired
     private SchoolClassService classService;
 
+    @Autowired
+    private ClassRepository classRepository;
+
     // ========== BASIC CRUD OPERATIONS ==========
     
     @Override
-    public Score findById(Long id) {
+    public Score findById(String id) {
         return scoreRepository.findById(id).orElse(null);
     }
 
@@ -48,6 +53,13 @@ public class ScoreServiceImpl implements ScoreService {
     public Score save(Score score) {
         validateScoreData(score);
         
+        if (score.getClassId() == null && score.getClassName() != null) {
+            SchoolClass schoolClass = classRepository.findByClassName(score.getClassName()).orElse(null);
+            if (schoolClass != null) {
+                score.setClassId(schoolClass.getId());
+            }
+        }
+
         // Auto-calculate TBM if not provided
         if (score.getTbm() == null || score.getTbm() == 0.0) {
             score.calculateTbm();
@@ -57,12 +69,19 @@ public class ScoreServiceImpl implements ScoreService {
     }
 
     @Override
-    public Score update(Long id, Score score) {
+    public Score update(String id, Score score) {
         if (!scoreRepository.existsById(id)) {
             return null;
         }
         
         validateScoreData(score);
+
+        if (score.getClassId() == null && score.getClassName() != null) {
+            SchoolClass schoolClass = classRepository.findByClassName(score.getClassName()).orElse(null);
+            if (schoolClass != null) {
+                score.setClassId(schoolClass.getId());
+            }
+        }
         
         // Auto-calculate TBM
         score.calculateTbm();
@@ -72,7 +91,7 @@ public class ScoreServiceImpl implements ScoreService {
     }
 
     @Override
-    public void delete(Long id) {
+    public void delete(String id) {
         scoreRepository.deleteById(id);
     }
 
@@ -85,6 +104,13 @@ public class ScoreServiceImpl implements ScoreService {
         for (Score score : scores) {
             try {
                 validateScoreData(score);
+
+                if (score.getClassId() == null && score.getClassName() != null) {
+                    SchoolClass schoolClass = classRepository.findByClassName(score.getClassName()).orElse(null);
+                    if (schoolClass != null) {
+                        score.setClassId(schoolClass.getId());
+                    }
+                }
                 
                 // Auto-calculate TBM if not provided
                 if (score.getTbm() == null || score.getTbm() == 0.0) {
@@ -108,6 +134,14 @@ public class ScoreServiceImpl implements ScoreService {
         for (Score score : scores) {
             if (score.getId() != null && scoreRepository.existsById(score.getId())) {
                 validateScoreData(score);
+
+                if (score.getClassId() == null && score.getClassName() != null) {
+                    SchoolClass schoolClass = classRepository.findByClassName(score.getClassName()).orElse(null);
+                    if (schoolClass != null) {
+                        score.setClassId(schoolClass.getId());
+                    }
+                }
+                
                 score.calculateTbm();
                 updatedScores.add(score);
             }
@@ -165,7 +199,7 @@ public class ScoreServiceImpl implements ScoreService {
             String ddgtxString = row.getCell(6).getStringCellValue();
             if (ddgtxString != null && !ddgtxString.trim().isEmpty()) {
                 List<Integer> ddgtx = parseCommaSeparatedScores(ddgtxString);
-                score.setDdgtx(ddgtx);
+                score.setDdgtxList(ddgtx);
             }
             
             // Parse other scores
@@ -372,7 +406,7 @@ public class ScoreServiceImpl implements ScoreService {
     // ========== SECURITY METHODS ==========
     
     @Override
-    public boolean teacherHasAccessToScore(Long teacherId, Long scoreId) {
+    public boolean teacherHasAccessToScore(Long teacherId, String scoreId) {
         return scoreRepository.existsByIdAndTeacherId(scoreId, teacherId);
     }
 
@@ -475,7 +509,7 @@ public class ScoreServiceImpl implements ScoreService {
         }
         
         // Regular scores validation
-        List<Integer> ddgtx = score.getDdgtx();
+        List<Integer> ddgtx = score.getDdgtxList();
         if (ddgtx != null) {
             for (int i = 0; i < ddgtx.size(); i++) {
                 Integer regularScore = ddgtx.get(i);
@@ -490,22 +524,22 @@ public class ScoreServiceImpl implements ScoreService {
             errors.add("Semester must be '1' or '2'");
         }
         
-        // Check for duplicate scores (same student, class, subject, year, semester)
-        if (score.getId() == null) { // Only check for new scores
-            List<Score> duplicates = scoreRepository.findDuplicateScore(
-                score.getStudentId(), score.getClassName(), score.getSubject(), 
-                score.getYear(), score.getSemester());
-            if (!duplicates.isEmpty()) {
-                errors.add("Score already exists for this student in the same class, subject, year, and semester");
-            }
-        } else { // Check for existing scores excluding current one
-            boolean hasDuplicate = scoreRepository.existsDuplicateScore(
-                score.getStudentId(), score.getClassName(), score.getSubject(), 
-                score.getYear(), score.getSemester(), score.getId());
-            if (hasDuplicate) {
-                errors.add("Another score already exists for this student in the same class, subject, year, and semester");
-            }
-        }
+        // // Check for duplicate scores (same student, class, subject, year, semester)
+        // if (score.getId() == null) { // Only check for new scores
+        //     List<Score> duplicates = scoreRepository.findDuplicateScore(
+        //         score.getStudentId(), score.getClassName(), score.getSubject(), 
+        //         score.getYear(), score.getSemester());
+        //     if (!duplicates.isEmpty()) {
+        //         errors.add("Score already exists for this student in the same class, subject, year, and semester");
+        //     }
+        // } else { // Check for existing scores excluding current one
+        //     boolean hasDuplicate = scoreRepository.existsDuplicateScore(
+        //         score.getStudentId(), score.getClassName(), score.getSubject(), 
+        //         score.getYear(), score.getSemester(), score.getId());
+        //     if (hasDuplicate) {
+        //         errors.add("Another score already exists for this student in the same class, subject, year, and semester");
+        //     }
+        // }
         
         return errors;
     }
@@ -609,8 +643,8 @@ public class ScoreServiceImpl implements ScoreService {
             // HK1 scores
             if (hk1Score != null) {
                 // ĐĐGtx - average of regular scores
-                double avgTx1 = hk1Score.getDdgtx() != null && !hk1Score.getDdgtx().isEmpty()
-                        ? hk1Score.getDdgtx().stream().mapToInt(Integer::intValue).average().orElse(0.0)
+                double avgTx1 = hk1Score.getDdgtxList() != null && !hk1Score.getDdgtxList().isEmpty()
+                        ? hk1Score.getDdgtxList().stream().mapToInt(Integer::intValue).average().orElse(0.0)
                         : 0.0;
                 Cell txCell1 = row.createCell(colIndex++);
                 txCell1.setCellValue(Math.round(avgTx1 * 10.0) / 10.0);
@@ -646,8 +680,8 @@ public class ScoreServiceImpl implements ScoreService {
             // HK2 scores
             if (hk2Score != null) {
                 // ĐĐGtx - average of regular scores
-                double avgTx2 = hk2Score.getDdgtx() != null && !hk2Score.getDdgtx().isEmpty()
-                        ? hk2Score.getDdgtx().stream().mapToInt(Integer::intValue).average().orElse(0.0)
+                double avgTx2 = hk2Score.getDdgtxList() != null && !hk2Score.getDdgtxList().isEmpty()
+                        ? hk2Score.getDdgtxList().stream().mapToInt(Integer::intValue).average().orElse(0.0)
                         : 0.0;
                 Cell txCell2 = row.createCell(colIndex++);
                 txCell2.setCellValue(Math.round(avgTx2 * 10.0) / 10.0);

@@ -9,11 +9,11 @@ import java.util.List;
 public interface ScoreService {
     
     // Basic CRUD operations
-    Score findById(Long id);
+    Score findById(String id);
     List<Score> findAll();
     Score save(Score score);
-    Score update(Long id, Score score);
-    void delete(Long id);
+    Score update(String id, Score score);
+    void delete(String id);
     
     // Batch operations
     List<Score> saveAll(List<Score> scores);
@@ -44,7 +44,7 @@ public interface ScoreService {
     List<Score> findByTeacherIdAndYearAndSemester(Long teacherId, int year, String semester);
     
     // Security methods
-    boolean teacherHasAccessToScore(Long teacherId, Long scoreId);
+    boolean teacherHasAccessToScore(Long teacherId, String id);
     boolean teacherHasAccessToClass(Long teacherId, String className, String subject, Integer academicYear, String semester);
     boolean teacherCanCreateScoreForStudent(Long teacherId, Long studentId, String className, String subject, Integer academicYear, String semester);
     

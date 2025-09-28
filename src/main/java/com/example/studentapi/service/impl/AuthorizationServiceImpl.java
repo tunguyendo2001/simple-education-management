@@ -54,7 +54,7 @@ public class AuthorizationServiceImpl implements AuthorizationService {
     }
 
     @Override
-    public boolean canTeacherModifyScore(Long teacherId, Long scoreId) {
+    public boolean canTeacherModifyScore(Long teacherId, String scoreId) {
         Score score = scoreRepository.findById(scoreId).orElse(null);
         if (score == null) {
             return false;

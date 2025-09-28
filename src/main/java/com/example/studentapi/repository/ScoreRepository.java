@@ -9,9 +9,7 @@ import java.util.List;
 import java.util.Optional;
 
 @Repository
-public interface ScoreRepository extends JpaRepository<Score, Long> {
-    
-    // ========== BASIC QUERY METHODS ==========
+public interface ScoreRepository extends JpaRepository<Score, String> {
     
     // Find scores by student ID
     List<Score> findByStudentId(Long studentId);
@@ -64,17 +62,13 @@ public interface ScoreRepository extends JpaRepository<Score, Long> {
     
     // ========== SECURITY QUERIES ==========
     
-    // // Check if teacher has access to specific class
-    // @Query("SELECT COUNT(s) > 0 FROM Score s WHERE s.teacherId = :teacherId AND s.className = :className")
-    // boolean teacherHasAccessToClass(@Param("teacherId") Long teacherId, @Param("className") String className);
-    
-    // Find score by ID and teacher ID for authorization
+    // Find score by custom ID and teacher ID for authorization
     @Query("SELECT s FROM Score s WHERE s.id = :scoreId AND s.teacherId = :teacherId")
-    Optional<Score> findByIdAndTeacherId(@Param("scoreId") Long scoreId, @Param("teacherId") Long teacherId);
+    Optional<Score> findByIdAndTeacherId(@Param("scoreId") String scoreId, @Param("teacherId") Long teacherId);
     
     // Check if score exists and belongs to teacher
     @Query("SELECT COUNT(s) > 0 FROM Score s WHERE s.teacherId = :teacherId AND s.id = :scoreId")
-    boolean existsByIdAndTeacherId(@Param("scoreId") Long scoreId, @Param("teacherId") Long teacherId);
+    boolean existsByIdAndTeacherId(@Param("scoreId") String scoreId, @Param("teacherId") Long teacherId);
     
     // ========== DUPLICATE CHECK QUERIES ==========
     
@@ -93,7 +87,7 @@ public interface ScoreRepository extends JpaRepository<Score, Long> {
                                 @Param("subject") String subject, 
                                 @Param("year") int year, 
                                 @Param("semester") String semester, 
-                                @Param("excludeId") Long excludeId);
+                                @Param("excludeId") String excludeId);
     
     // ========== STATISTICAL QUERIES ==========
     
@@ -130,69 +124,48 @@ public interface ScoreRepository extends JpaRepository<Score, Long> {
     @Query("SELECT s FROM Score s LEFT JOIN FETCH s.student LEFT JOIN FETCH s.teacher WHERE s.teacherId = :teacherId ORDER BY s.className, s.subject, s.studentName")
     List<Score> findScoresForTeacherExport(@Param("teacherId") Long teacherId);
     
-    // Find scores for class-subject export
-    @Query("SELECT s FROM Score s LEFT JOIN FETCH s.student LEFT JOIN FETCH s.teacher WHERE s.className = :className AND s.subject = :subject AND s.year = :year AND s.semester = :semester ORDER BY s.studentName")
-    List<Score> findScoresForClassSubjectExport(@Param("className") String className, 
-                                               @Param("subject") String subject,
-                                               @Param("year") int year, 
-                                               @Param("semester") String semester);
+    // ========== BULK OPERATION SUPPORT ==========
     
-    // ========== PERFORMANCE QUERIES ==========
+    // Find scores for bulk operations by teacher, class, subject, year, and semester
+    @Query("SELECT s FROM Score s WHERE s.teacherId = :teacherId AND s.className = :className AND s.subject = :subject AND s.year = :year AND s.semester = :semester ORDER BY s.studentName")
+    List<Score> findForBulkOperation(@Param("teacherId") Long teacherId,
+                                   @Param("className") String className,
+                                   @Param("subject") String subject,
+                                   @Param("year") int year,
+                                   @Param("semester") String semester);
     
-    // Find recent scores by teacher and year
-    @Query("SELECT s FROM Score s WHERE s.teacherId = :teacherId AND s.year = :year ORDER BY s.updatedAt DESC")
-    List<Score> findRecentScoresByTeacherAndYear(@Param("teacherId") Long teacherId, @Param("year") int year);
+    // Find scores by multiple student IDs (for bulk operations)
+    @Query("SELECT s FROM Score s WHERE s.studentId IN :studentIds AND s.teacherId = :teacherId AND s.className = :className AND s.subject = :subject AND s.year = :year AND s.semester = :semester")
+    List<Score> findByStudentIdsAndContext(@Param("studentIds") List<Long> studentIds,
+                                          @Param("teacherId") Long teacherId,
+                                          @Param("className") String className,
+                                          @Param("subject") String subject,
+                                          @Param("year") int year,
+                                          @Param("semester") String semester);
     
-    // Find recent scores by class and year
-    @Query("SELECT s FROM Score s WHERE s.className = :className AND s.year = :year ORDER BY s.updatedAt DESC")
-    List<Score> findRecentScoresByClassAndYear(@Param("className") String className, @Param("year") int year);
+    // ========== CUSTOM ID UTILITY QUERIES ==========
     
-    // ========== GRADE DISTRIBUTION QUERIES ==========
+    // Check if custom ID exists by components
+    @Query("SELECT COUNT(s) > 0 FROM Score s WHERE s.teacherId = :teacherId AND s.studentId = :studentId AND s.className = :className AND s.subject = :subject AND s.year = :year AND s.semester = :semester")
+    boolean existsByComponents(@Param("teacherId") Long teacherId, 
+                              @Param("studentId") Long studentId, 
+                              @Param("className") String className, 
+                              @Param("subject") String subject, 
+                              @Param("year") Integer year, 
+                              @Param("semester") String semester);
     
-    // Count scores in a specific range
-    @Query("SELECT COUNT(s) FROM Score s WHERE s.className = :className AND s.subject = :subject AND s.year = :year AND s.semester = :semester AND s.tbm >= :minScore AND s.tbm < :maxScore")
-    Long countScoresInRange(@Param("className") String className, 
-                           @Param("subject") String subject, 
-                           @Param("year") int year, 
-                           @Param("semester") String semester, 
-                           @Param("minScore") double minScore, 
-                           @Param("maxScore") double maxScore);
+    // Find score by components (alternative to ID lookup)
+    @Query("SELECT s FROM Score s WHERE s.teacherId = :teacherId AND s.studentId = :studentId AND s.className = :className AND s.subject = :subject AND s.year = :year AND s.semester = :semester")
+    Optional<Score> findByComponents(@Param("teacherId") Long teacherId, 
+                                    @Param("studentId") Long studentId, 
+                                    @Param("className") String className, 
+                                    @Param("subject") String subject, 
+                                    @Param("year") Integer year, 
+                                    @Param("semester") String semester);
     
-    // Count scores above a minimum threshold
-    @Query("SELECT COUNT(s) FROM Score s WHERE s.className = :className AND s.subject = :subject AND s.year = :year AND s.semester = :semester AND s.tbm >= :minScore")
-    Long countScoresAbove(@Param("className") String className, 
-                         @Param("subject") String subject, 
-                         @Param("year") int year, 
-                         @Param("semester") String semester, 
-                         @Param("minScore") double minScore);
-    
-    // Count excellent scores (>= 8.0)
-    @Query("SELECT COUNT(s) FROM Score s WHERE s.className = :className AND s.subject = :subject AND s.year = :year AND s.semester = :semester AND s.tbm >= 8.0")
-    Long countExcellentScores(@Param("className") String className, 
-                             @Param("subject") String subject, 
-                             @Param("year") int year, 
-                             @Param("semester") String semester);
-    
-    // Count good scores (6.5 - 7.9)
-    @Query("SELECT COUNT(s) FROM Score s WHERE s.className = :className AND s.subject = :subject AND s.year = :year AND s.semester = :semester AND s.tbm >= 6.5 AND s.tbm < 8.0")
-    Long countGoodScores(@Param("className") String className, 
-                        @Param("subject") String subject, 
-                        @Param("year") int year, 
-                        @Param("semester") String semester);
-    
-    // Count average scores (5.0 - 6.4)
-    @Query("SELECT COUNT(s) FROM Score s WHERE s.className = :className AND s.subject = :subject AND s.year = :year AND s.semester = :semester AND s.tbm >= 5.0 AND s.tbm < 6.5")
-    Long countAverageScores(@Param("className") String className, 
-                           @Param("subject") String subject, 
-                           @Param("year") int year, 
-                           @Param("semester") String semester);
-    
-    // Count below average scores (< 5.0)
-    @Query("SELECT COUNT(s) FROM Score s WHERE s.className = :className AND s.subject = :subject AND s.year = :year AND s.semester = :semester AND s.tbm < 5.0")
-    Long countBelowAverageScores(@Param("className") String className, 
-                                @Param("subject") String subject, 
-                                @Param("year") int year, 
-                                @Param("semester") String semester);
+    // Find all scores for a teacher-student combination
+    @Query("SELECT s FROM Score s WHERE s.teacherId = :teacherId AND s.studentId = :studentId ORDER BY s.year DESC, s.semester DESC")
+    List<Score> findByTeacherAndStudent(@Param("teacherId") Long teacherId, @Param("studentId") Long studentId);
     
     // ========== METADATA QUERIES ==========
     
@@ -212,32 +185,9 @@ public interface ScoreRepository extends JpaRepository<Score, Long> {
     @Query("SELECT DISTINCT s.year FROM Score s WHERE s.teacherId = :teacherId ORDER BY s.year DESC")
     List<Integer> findYearsByTeacher(@Param("teacherId") Long teacherId);
     
-    // Find distinct years by class
-    @Query("SELECT DISTINCT s.year FROM Score s WHERE s.className = :className ORDER BY s.year DESC")
-    List<Integer> findYearsByClass(@Param("className") String className);
-    
     // Find distinct semesters by teacher and year
     @Query("SELECT DISTINCT s.semester FROM Score s WHERE s.teacherId = :teacherId AND s.year = :year ORDER BY s.semester")
     List<String> findSemestersByTeacherAndYear(@Param("teacherId") Long teacherId, @Param("year") int year);
-    
-    // ========== BULK OPERATION SUPPORT ==========
-    
-    // Find scores for bulk operations by teacher, class, subject, year, and semester
-    @Query("SELECT s FROM Score s WHERE s.teacherId = :teacherId AND s.className = :className AND s.subject = :subject AND s.year = :year AND s.semester = :semester ORDER BY s.studentName")
-    List<Score> findForBulkOperation(@Param("teacherId") Long teacherId,
-                                   @Param("className") String className,
-                                   @Param("subject") String subject,
-                                   @Param("year") int year,
-                                   @Param("semester") String semester);
-    
-    // Find scores by multiple student IDs (for bulk operations)
-    @Query("SELECT s FROM Score s WHERE s.studentId IN :studentIds AND s.teacherId = :teacherId AND s.className = :className AND s.subject = :subject AND s.year = :year AND s.semester = :semester")
-    List<Score> findByStudentIdsAndContext(@Param("studentIds") List<Long> studentIds,
-                                          @Param("teacherId") Long teacherId,
-                                          @Param("className") String className,
-                                          @Param("subject") String subject,
-                                          @Param("year") int year,
-                                          @Param("semester") String semester);
     
     // ========== ADVANCED ANALYTICS QUERIES ==========
     
