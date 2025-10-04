@@ -28,63 +28,63 @@ services:
       start_period: 60s
     command: --default-authentication-plugin=mysql_native_password
 
-  # # Spring Boot Application
-  # app:
-  #   build:
-  #     context: .
-  #     dockerfile: Dockerfile
-  #   container_name: education_app
-  #   restart: unless-stopped
-  #   depends_on:
-  #     mysql:
-  #       condition: service_healthy
-  #   environment:
-  #     # Database Configuration
-  #     SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/education_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
-  #     SPRING_DATASOURCE_USERNAME: mysql
-  #     SPRING_DATASOURCE_PASSWORD: mysql
-  #     SPRING_DATASOURCE_DRIVER_CLASS_NAME: com.mysql.cj.jdbc.Driver
+  # Spring Boot Application
+  app:
+    # build:
+    #   context: .
+    #   dockerfile: Dockerfile
+    image: ms_education:1.0
+    container_name: education_app
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      # Database Configuration
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/education_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      SPRING_DATASOURCE_USERNAME: mysql
+      SPRING_DATASOURCE_PASSWORD: mysql
+      SPRING_DATASOURCE_DRIVER_CLASS_NAME: com.mysql.cj.jdbc.Driver
       
-  #     # JPA Configuration
-  #     SPRING_JPA_HIBERNATE_DDL_AUTO: update
-  #     SPRING_JPA_SHOW_SQL: true
-  #     SPRING_JPA_PROPERTIES_HIBERNATE_FORMAT_SQL: true
-  #     SPRING_JPA_PROPERTIES_HIBERNATE_DIALECT: org.hibernate.dialect.MySQL8Dialect
+      # JPA Configuration
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+      SPRING_JPA_SHOW_SQL: true
+      SPRING_JPA_PROPERTIES_HIBERNATE_FORMAT_SQL: true
+      SPRING_JPA_PROPERTIES_HIBERNATE_DIALECT: org.hibernate.dialect.MySQL8Dialect
       
-  #     # Server Configuration
-  #     SERVER_PORT: 8080
-  #     SERVER_ADDRESS: 0.0.0.0
+      # Server Configuration
+      APP_PORT: 8080
+      APP_HOST: ${HOST}
       
-  #     # JWT Configuration
-  #     JWT_SECRET: ${JWT_SECRET:-education-jwt-secret-key-for-development-only-change-in-production}
-  #     JWT_EXPIRATION: ${JWT_EXPIRATION:-28800000}
+      # JWT Configuration
+      JWT_SECRET: ${JWT_SECRET:-education-jwt-secret-key-for-development-only-change-in-production}
+      JWT_EXPIRATION: ${JWT_EXPIRATION:-28800000}
       
-  #     # File Upload Configuration
-  #     SPRING_SERVLET_MULTIPART_MAX_FILE_SIZE: 10MB
-  #     SPRING_SERVLET_MULTIPART_MAX_REQUEST_SIZE: 10MB
+      # File Upload Configuration
+      SPRING_SERVLET_MULTIPART_MAX_FILE_SIZE: 10MB
+      SPRING_SERVLET_MULTIPART_MAX_REQUEST_SIZE: 10MB
       
-  #     # Logging
-  #     LOGGING_LEVEL_COM_EXAMPLE_STUDENTAPI: DEBUG
-  #     LOGGING_LEVEL_ORG_SPRINGFRAMEWORK_SECURITY: INFO
+      # Logging
+      LOGGING_LEVEL_COM_EXAMPLE_STUDENTAPI: DEBUG
+      LOGGING_LEVEL_ORG_SPRINGFRAMEWORK_SECURITY: INFO
       
-  #     # Profile
-  #     SPRING_PROFILES_ACTIVE: docker
-      
-  #   ports:
-  #     - "8080:8080"
-  #   volumes:
-  #     - ../education_app/app_uploads:/app/uploads
-  #     - ../education_app/app_logs:/app/logs
-  #   networks:
-  #     - education_network
-  #   healthcheck:
-  #     test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
-  #     timeout: 10s
-  #     retries: 5
-  #     interval: 30s
-  #     start_period: 120s
-  #   # Wait for MySQL to be ready
-  #   command: ["./wait-for-it.sh", "mysql:3306", "--", "java", "-jar", "app.jar"]
+      # Profile
+      SPRING_PROFILES_ACTIVE: docker
+    ports:
+      - "8080:8080"
+    volumes:
+      - ../education_app/app_uploads:/app/uploads
+      - ../education_app/app_logs:/app/logs
+    networks:
+      - education_network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://${HOST}:8080/actuator/health"]
+      timeout: 10s
+      retries: 5
+      interval: 30s
+      start_period: 120s
+    # Wait for MySQL to be ready
+    command: ["./wait-for-it.sh", "mysql:3306", "--", "java", "-jar", "app.jar"]
 
   # # Nginx Reverse Proxy (optional)
   # nginx:

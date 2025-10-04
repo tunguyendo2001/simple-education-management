@@ -50,21 +50,26 @@ public class JwtAuthenticationInterceptor implements HandlerInterceptor {
             return false;
         }
 
-        // Validate token
-        if (!authService.validateToken(token)) {
-            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-            response.getWriter().write("{\"error\":\"Invalid or expired token\"}");
-            response.setContentType("application/json");
-            return false;
-        }
+        // // Validate token
+        // if (!authService.validateToken(token)) {
+        //     response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+        //     response.getWriter().write("{\"error\":\"Invalid or expired token\"}");
+        //     response.setContentType("application/json");
+        //     return false;
+        // }
 
-        // Add teacher ID to request attributes for use in controllers
-        Long teacherId = authService.getTeacherIdFromToken(token);
-        if (teacherId != null) {
-            request.setAttribute("teacherId", teacherId);
-            // Also add as header for backward compatibility
-            request.setAttribute("Teacher-Id", teacherId.toString());
-        }
+        // // Add teacher ID to request attributes for use in controllers
+        // Long teacherId = authService.getTeacherIdFromToken(token);
+        // if (teacherId != null) {
+        //     request.setAttribute("teacherId", teacherId);
+        //     // Also add as header for backward compatibility
+        //     request.setAttribute("Teacher-Id", teacherId.toString());
+        // }
+
+        String teacherId = "";
+        request.setAttribute("teacherId", teacherId);
+        // Also add as header for backward compatibility
+        request.setAttribute("Teacher-Id", teacherId.toString());
 
         return true;
     }

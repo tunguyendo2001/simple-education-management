@@ -337,12 +337,6 @@ public class ScoreController {
         }
     }
 
-    // @DeleteMapping("/{id}")
-    // public ResponseEntity<Void> deleteScore(@PathVariable Long id) {
-    //     scoreService.delete(id);
-    //     return ResponseEntity.noContent().build();
-    // }
-
     // Secured endpoint to get scores by class name, year, and semester
     @GetMapping("/class/{className}/year/{year}/semester/{semester}/subject/{subject}")
     @Operation(summary = "Get scores by class, year, semester and subject", 
@@ -478,39 +472,6 @@ public class ScoreController {
         List<Score> scores = scoreService.findByStudentId(studentId);
         return ResponseEntity.ok(scores);
     }
-
-    // @GetMapping("/class/{className}")
-    // @Operation(summary = "Get scores by class name", 
-    //            description = "Retrieve all scores for a specific class. Teachers can only access their own classes.")
-    // public ResponseEntity<?> getScoresByClass(
-    //         @PathVariable String className,
-    //         HttpServletRequest request) {
-        
-    //     // Get teacher ID from request header
-    //     String teacherIdHeader = request.getHeader("Teacher-Id");
-        
-    //     if (teacherIdHeader == null || teacherIdHeader.isEmpty()) {
-    //         return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-    //             .body("Teacher ID is required in header");
-    //     }
-        
-    //     try {
-    //         Long teacherId = Long.parseLong(teacherIdHeader);
-            
-    //         // Check if teacher has access to this class
-    //         if (!scoreServiceImpl.teacherHasAccessToClass(teacherId, className)) {
-    //             return ResponseEntity.status(HttpStatus.FORBIDDEN)
-    //                 .body("Teacher does not have access to this class");
-    //         }
-            
-    //         List<Score> scores = scoreService.findByClassName(className);
-    //         return ResponseEntity.ok(scores);
-            
-    //     } catch (NumberFormatException e) {
-    //         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-    //             .body("Invalid Teacher ID format");
-    //     }
-    // }
 
     // Utility endpoint to check teacher access to class
     @GetMapping("/check-access/{className}/{year}/{semester}/{subject}")

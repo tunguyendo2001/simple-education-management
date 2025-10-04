@@ -56,7 +56,7 @@ CREATE TABLE IF NOT EXISTS teacher_classes (
     class_id BIGINT NOT NULL,
     subject VARCHAR(100) NOT NULL,
     academic_year INT NOT NULL,
-    semester VARCHAR(20) NOT NULL, -- "1", "2", or "BOTH"
+    semester VARCHAR(20) NOT NULL,
     assignment_role ENUM('PRIMARY_TEACHER', 'SUBJECT_TEACHER', 'ASSISTANT_TEACHER', 'SUBSTITUTE_TEACHER') DEFAULT 'SUBJECT_TEACHER',
     is_primary_teacher BOOLEAN DEFAULT FALSE,
     assigned_by VARCHAR(100),
@@ -74,7 +74,7 @@ CREATE TABLE IF NOT EXISTS student_class_assignments (
     student_id BIGINT NOT NULL,
     class_id BIGINT NOT NULL,
     academic_year INT NOT NULL,
-    semester VARCHAR(20) NOT NULL, -- "1", "2", or "BOTH"
+    semester VARCHAR(20) NOT NULL,
     student_number VARCHAR(20), -- Order number in class
     enrolled_by VARCHAR(100),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -87,7 +87,7 @@ CREATE TABLE IF NOT EXISTS student_class_assignments (
 
 -- Create scores table with subject support
 CREATE TABLE IF NOT EXISTS scores (
-    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    id VARCHAR(500) PRIMARY KEY,
     student_id BIGINT,
     teacher_id BIGINT,
     class_id BIGINT,
@@ -113,7 +113,7 @@ CREATE TABLE IF NOT EXISTS scores (
 CREATE TABLE IF NOT EXISTS semester_schedules (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     schedule_name VARCHAR(255) NOT NULL,
-    semester VARCHAR(10) NOT NULL, -- "1" or "2"
+    semester VARCHAR(10) NOT NULL,
     year INT NOT NULL,
     class_name VARCHAR(100) NOT NULL,
     start_date_time TIMESTAMP NOT NULL,
@@ -135,7 +135,7 @@ CHECK (subject IS NOT NULL AND subject != '');
 
 ALTER TABLE scores 
 ADD CONSTRAINT chk_scores_semester 
-CHECK (semester IN ('1', '2'));
+CHECK (semester IN ('1', '2', '3'));
 
 ALTER TABLE scores 
 ADD CONSTRAINT chk_scores_ddggk_range 
@@ -151,12 +151,12 @@ CHECK (tbm >= 0 AND tbm <= 10);
 
 ALTER TABLE scores 
 ADD CONSTRAINT uniq_score 
-UNIQUE (student_id, subject, semester, year);
+UNIQUE (teacher_id, student_id, subject, semester, year);
 
 -- Add constraints for semester_schedules
 ALTER TABLE semester_schedules 
 ADD CONSTRAINT chk_schedule_semester 
-CHECK (semester IN ('1', '2'));
+CHECK (semester IN ('1', '2', '3'));
 
 ALTER TABLE semester_schedules 
 ADD CONSTRAINT chk_schedule_dates 
@@ -299,6 +299,7 @@ INSERT INTO teacher_classes (teacher_id, class_id, subject, academic_year, semes
 (1, 6, 'Tin học', 2024, '1', 'SUBJECT_TEACHER', false, 'Admin', true, '2024-08-20', '2024-08-20'),
 (2, 3, 'Toán học', 2024, '1', 'PRIMARY_TEACHER', true, 'Admin', true, '2024-08-20', '2024-08-20'),
 (2, 8, 'Vật lý', 2024, '1', 'SUBJECT_TEACHER', false, 'Admin', true, '2024-08-20', '2024-08-20'),
+(3, 1, 'Văn học', 2024, '1', 'PRIMARY_TEACHER', true, 'Admin', true, '2024-08-20', '2024-08-20'),
 (3, 5, 'Văn học', 2024, '1', 'PRIMARY_TEACHER', true, 'Admin', true, '2024-08-20', '2024-08-20'),
 (4, 7, 'Tiếng Anh', 2024, '1', 'PRIMARY_TEACHER', true, 'Admin', true, '2024-08-20', '2024-08-20'),
 (5, 1, 'Chủ nhiệm', 2024, 'BOTH', 'PRIMARY_TEACHER', true, 'Admin', true, '2024-08-20', '2024-08-20');
@@ -333,66 +334,66 @@ INSERT INTO student_class_assignments (student_id, class_id, academic_year, seme
 
 -- Insert Scores (with subject field matching the assignments)
 
-INSERT INTO scores (student_id, teacher_id, class_id, class_name, subject, semester, year, ddgtx, ddggk, ddgck, tbm, comment, student_name, teacher_name, created_at, updated_at) VALUES
+INSERT INTO scores (id, student_id, teacher_id, class_id, class_name, subject, semester, year, ddgtx, ddggk, ddgck, tbm, comment, student_name, teacher_name, created_at, updated_at) VALUES
 -- Scores for Class 8A1 - Computer Science (Tin học) - Teacher Nguyễn Thị Thủy (ID: 1) - Semester 1
-(1, 1, 1, '8A1', 'Tin học', '1', 2024, '8,9,7,8', 8, 9, 8.0, 'Học sinh có tiến bộ rõ rệt', 'Nguyễn Văn An', 'Nguyễn Thị Thủy', '2024-09-15', '2024-09-15'),
-(2, 1, 1, '8A1', 'Tin học', '1', 2024, '9,8,9,10', 9, 9, 9.0, 'Rất tốt, tiếp tục phát huy', 'Trần Thị Bình', 'Nguyễn Thị Thủy', '2024-09-15', '2024-09-15'),
-(3, 1, 1, '8A1', 'Tin học', '1', 2024, '7,6,7,8', 7, 8, 7.0, 'Cần cố gắng hơn', 'Lê Văn Cường', 'Nguyễn Thị Thủy', '2024-09-15', '2024-09-15'),
-(4, 1, 1, '8A1', 'Tin học', '1', 2024, '8,8,9,8', 8, 8, 8.0, 'Kết quả ổn định', 'Phạm Thị Dung', 'Nguyễn Thị Thủy', '2024-09-15', '2024-09-15'),
-(5, 1, 1, '8A1', 'Tin học', '1', 2024, '6,7,6,7', 6, 7, 7.0, 'Cần bổ sung kiến thức cơ bản', 'Hoàng Văn Em', 'Nguyễn Thị Thủy', '2024-09-15', '2024-09-15'),
+('1_1_2024_1_8a1_tinhoc', 1, 1, 1, '8A1', 'Tin học', '1', 2024, '8,9,7,8', 8, 9, 8.0, 'Học sinh có tiến bộ rõ rệt', 'Nguyễn Văn An', 'Nguyễn Thị Thủy', '2024-09-15', '2024-09-15'),
+('1_2_2024_1_8a1_tinhoc', 2, 1, 1, '8A1', 'Tin học', '1', 2024, '9,8,9,10', 9, 9, 9.0, 'Rất tốt, tiếp tục phát huy', 'Trần Thị Bình', 'Nguyễn Thị Thủy', '2024-09-15', '2024-09-15'),
+('1_3_2024_1_8a1_tinhoc', 3, 1, 1, '8A1', 'Tin học', '1', 2024, '7,6,7,8', 7, 8, 7.0, 'Cần cố gắng hơn', 'Lê Văn Cường', 'Nguyễn Thị Thủy', '2024-09-15', '2024-09-15'),
+('1_4_2024_1_8a1_tinhoc', 4, 1, 1, '8A1', 'Tin học', '1', 2024, '8,8,9,8', 8, 8, 8.0, 'Kết quả ổn định', 'Phạm Thị Dung', 'Nguyễn Thị Thủy', '2024-09-15', '2024-09-15'),
+('1_5_2024_1_8a1_tinhoc', 5, 1, 1, '8A1', 'Tin học', '1', 2024, '6,7,6,7', 6, 7, 7.0, 'Cần bổ sung kiến thức cơ bản', 'Hoàng Văn Em', 'Nguyễn Thị Thủy', '2024-09-15', '2024-09-15'),
 
 -- Scores for Class 8A2 - Computer Science (Tin học) - Teacher Nguyễn Thị Thủy (ID: 1) - Semester 1
-(6, 1, 2, '8A2', 'Tin học', '1', 2024, '9,9,8,10', 9, 10, 9.0, 'Xuất sắc', 'Vũ Thị Giang', 'Nguyễn Thị Thủy', '2024-09-15', '2024-09-15'),
-(7, 1, 2, '8A2', 'Tin học', '1', 2024, '8,7,8,9', 8, 8, 8.0, 'Tốt', 'Đỗ Văn Hùng', 'Nguyễn Thị Thủy', '2024-09-15', '2024-09-15'),
-(8, 1, 2, '8A2', 'Tin học', '1', 2024, '7,8,7,8', 7, 8, 8.0, 'Khá', 'Bùi Thị Linh', 'Nguyễn Thị Thủy', '2024-09-15', '2024-09-15'),
-(9, 1, 2, '8A2', 'Tin học', '1', 2024, '8,9,8,9', 8, 9, 9.0, 'Tốt', 'Ngô Văn Khang', 'Nguyễn Thị Thủy', '2024-09-15', '2024-09-15'),
-(10, 1, 2, '8A2', 'Tin học', '1', 2024, '9,10,9,9', 9, 10, 10.0, 'Rất tốt', 'Cao Thị Mai', 'Nguyễn Thị Thủy', '2024-09-15', '2024-09-15'),
+('1_6_2024_1_8a2_tinhoc', 6, 1, 2, '8A2', 'Tin học', '1', 2024, '9,9,8,10', 9, 10, 9.0, 'Xuất sắc', 'Vũ Thị Giang', 'Nguyễn Thị Thủy', '2024-09-15', '2024-09-15'),
+('1_7_2024_1_8a2_tinhoc', 7, 1, 2, '8A2', 'Tin học', '1', 2024, '8,7,8,9', 8, 8, 8.0, 'Tốt', 'Đỗ Văn Hùng', 'Nguyễn Thị Thủy', '2024-09-15', '2024-09-15'),
+('1_8_2024_1_8a2_tinhoc', 8, 1, 2, '8A2', 'Tin học', '1', 2024, '7,8,7,8', 7, 8, 8.0, 'Khá', 'Bùi Thị Linh', 'Nguyễn Thị Thủy', '2024-09-15', '2024-09-15'),
+('1_9_2024_1_8a2_tinhoc', 9, 1, 2, '8A2', 'Tin học', '1', 2024, '8,9,8,9', 8, 9, 9.0, 'Tốt', 'Ngô Văn Khang', 'Nguyễn Thị Thủy', '2024-09-15', '2024-09-15'),
+('1_10_2024_1_8a2_tinhoc', 10, 1, 2, '8A2', 'Tin học', '1', 2024, '9,10,9,9', 9, 10, 10.0, 'Rất tốt', 'Cao Thị Mai', 'Nguyễn Thị Thủy', '2024-09-15', '2024-09-15'),
 
 -- Scores for Class 8B1 - Mathematics (Toán học) - Teacher Trần Văn Minh (ID: 2) - Semester 1
-(11, 2, 3, '8B1', 'Toán học', '1', 2024, '8,9,8,9', 8, 9, 8.0, 'Giỏi toán', 'Đinh Văn Nam', 'Trần Văn Minh', '2024-09-15', '2024-09-15'),
-(12, 2, 3, '8B1', 'Toán học', '1', 2024, '7,7,8,7', 7, 8, 7.0, 'Khá', 'Tạ Thị Oanh', 'Trần Văn Minh', '2024-09-15', '2024-09-15'),
-(13, 2, 3, '8B1', 'Toán học', '1', 2024, '9,8,9,10', 9, 9, 9.0, 'Rất tốt', 'Lý Văn Phong', 'Trần Văn Minh', '2024-09-15', '2024-09-15'),
-(14, 2, 3, '8B1', 'Toán học', '1', 2024, '6,7,6,7', 6, 7, 7.0, 'Trung bình', 'Dương Thị Quỳnh', 'Trần Văn Minh', '2024-09-15', '2024-09-15'),
+('2_11_2024_1_8b1_toanhoc', 11, 2, 3, '8B1', 'Toán học', '1', 2024, '8,9,8,9', 8, 9, 8.0, 'Giỏi toán', 'Đinh Văn Nam', 'Trần Văn Minh', '2024-09-15', '2024-09-15'),
+('2_12_2024_1_8b1_toanhoc', 12, 2, 3, '8B1', 'Toán học', '1', 2024, '7,7,8,7', 7, 8, 7.0, 'Khá', 'Tạ Thị Oanh', 'Trần Văn Minh', '2024-09-15', '2024-09-15'),
+('2_13_2024_1_8b1_toanhoc', 13, 2, 3, '8B1', 'Toán học', '1', 2024, '9,8,9,10', 9, 9, 9.0, 'Rất tốt', 'Lý Văn Phong', 'Trần Văn Minh', '2024-09-15', '2024-09-15'),
+('2_14_2024_1_8b1_toanhoc', 14, 2, 3, '8B1', 'Toán học', '1', 2024, '6,7,6,7', 6, 7, 7.0, 'Trung bình', 'Dương Thị Quỳnh', 'Trần Văn Minh', '2024-09-15', '2024-09-15'),
 
 -- Scores for Class 9A1 - Computer Science (Tin học) - Teacher Nguyễn Thị Thủy (ID: 1) - Semester 1
-(15, 1, 4, '9A1', 'Tin học', '1', 2024, '10,9,10,9', 10, 10, 10.0, 'Xuất sắc', 'Võ Văn Sơn', 'Nguyễn Thị Thủy', '2024-09-15', '2024-09-15'),
-(16, 1, 4, '9A1', 'Tin học', '1', 2024, '8,9,8,8', 8, 9, 8.0, 'Tốt', 'Phan Thị Trang', 'Nguyễn Thị Thủy', '2024-09-15', '2024-09-15'),
-(17, 1, 4, '9A1', 'Tin học', '1', 2024, '9,9,9,8', 9, 9, 9.0, 'Rất tốt', 'Mai Văn Tuấn', 'Nguyễn Thị Thủy', '2024-09-15', '2024-09-15'),
+('1_15_2024_1_9a1_tinhoc', 15, 1, 4, '9A1', 'Tin học', '1', 2024, '10,9,10,9', 10, 10, 10.0, 'Xuất sắc', 'Võ Văn Sơn', 'Nguyễn Thị Thủy', '2024-09-15', '2024-09-15'),
+('1_16_2024_1_9a1_tinhoc', 16, 1, 4, '9A1', 'Tin học', '1', 2024, '8,9,8,8', 8, 9, 8.0, 'Tốt', 'Phan Thị Trang', 'Nguyễn Thị Thủy', '2024-09-15', '2024-09-15'),
+('1_17_2024_1_9a1_tinhoc', 17, 1, 4, '9A1', 'Tin học', '1', 2024, '9,9,9,8', 9, 9, 9.0, 'Rất tốt', 'Mai Văn Tuấn', 'Nguyễn Thị Thủy', '2024-09-15', '2024-09-15'),
 
 -- Scores for Class 7A1 - Computer Science (Tin học) - Teacher Nguyễn Thị Thủy (ID: 1) - Semester 1
-(18, 1, 6, '7A1', 'Tin học', '1', 2024, '7,8,7,8', 7, 8, 8.0, 'Khá', 'Chu Thị Uyên', 'Nguyễn Thị Thủy', '2024-09-15', '2024-09-15'),
-(19, 1, 6, '7A1', 'Tin học', '1', 2024, '8,8,9,8', 8, 8, 8.0, 'Tốt', 'Hà Văn Việt', 'Nguyễn Thị Thủy', '2024-09-15', '2024-09-15'),
-(20, 1, 6, '7A1', 'Tin học', '1', 2024, '9,8,9,9', 9, 9, 9.0, 'Rất tốt', 'Lài Thị Xuân', 'Nguyễn Thị Thủy', '2024-09-15', '2024-09-15'),
+('1_18_2024_1_7a1_tinhoc', 18, 1, 6, '7A1', 'Tin học', '1', 2024, '7,8,7,8', 7, 8, 8.0, 'Khá', 'Chu Thị Uyên', 'Nguyễn Thị Thủy', '2024-09-15', '2024-09-15'),
+('1_19_2024_1_7a1_tinhoc', 19, 1, 6, '7A1', 'Tin học', '1', 2024, '8,8,9,8', 8, 8, 8.0, 'Tốt', 'Hà Văn Việt', 'Nguyễn Thị Thủy', '2024-09-15', '2024-09-15'),
+('1_20_2024_1_7a1_tinhoc', 20, 1, 6, '7A1', 'Tin học', '1', 2024, '9,8,9,9', 9, 9, 9.0, 'Rất tốt', 'Lài Thị Xuân', 'Nguyễn Thị Thủy', '2024-09-15', '2024-09-15'),
 
 -- Scores for Class 8A1 - Computer Science (Tin học) - Teacher Nguyễn Thị Thủy (ID: 1) - Semester 2
-(1, 1, 1, '8A1', 'Tin học', '2', 2024, '8,9,8,9', 8, 9, 8.5, 'Tiếp tục phát huy trong học kỳ 2', 'Nguyễn Văn An', 'Nguyễn Thị Thủy', '2024-03-15', '2024-03-15'),
-(2, 1, 1, '8A1', 'Tin học', '2', 2024, '9,9,10,9', 9, 10, 9.3, 'Xuất sắc, có tiến bộ vượt bậc', 'Trần Thị Bình', 'Nguyễn Thị Thủy', '2024-03-15', '2024-03-15'),
-(3, 1, 1, '8A1', 'Tin học', '2', 2024, '7,8,7,8', 7, 8, 7.5, 'Có cải thiện so với học kỳ 1', 'Lê Văn Cường', 'Nguyễn Thị Thủy', '2024-03-15', '2024-03-15'),
-(4, 1, 1, '8A1', 'Tin học', '2', 2024, '8,9,8,8', 8, 9, 8.3, 'Duy trì kết quả tốt', 'Phạm Thị Dung', 'Nguyễn Thị Thủy', '2024-03-15', '2024-03-15'),
-(5, 1, 1, '8A1', 'Tin học', '2', 2024, '7,8,7,8', 7, 8, 7.5, 'Có sự tiến bộ đáng kể', 'Hoàng Văn Em', 'Nguyễn Thị Thủy', '2024-03-15', '2024-03-15'),
+('1_1_2024_2_8a1_tinhoc', 1, 1, 1, '8A1', 'Tin học', '2', 2024, '8,9,8,9', 8, 9, 8.5, 'Tiếp tục phát huy trong học kỳ 2', 'Nguyễn Văn An', 'Nguyễn Thị Thủy', '2024-03-15', '2024-03-15'),
+('1_2_2024_2_8a1_tinhoc', 2, 1, 1, '8A1', 'Tin học', '2', 2024, '9,9,10,9', 9, 10, 9.3, 'Xuất sắc, có tiến bộ vượt bậc', 'Trần Thị Bình', 'Nguyễn Thị Thủy', '2024-03-15', '2024-03-15'),
+('1_3_2024_2_8a1_tinhoc', 3, 1, 1, '8A1', 'Tin học', '2', 2024, '7,8,7,8', 7, 8, 7.5, 'Có cải thiện so với học kỳ 1', 'Lê Văn Cường', 'Nguyễn Thị Thủy', '2024-03-15', '2024-03-15'),
+('1_4_2024_2_8a1_tinhoc', 4, 1, 1, '8A1', 'Tin học', '2', 2024, '8,9,8,8', 8, 9, 8.3, 'Duy trì kết quả tốt', 'Phạm Thị Dung', 'Nguyễn Thị Thủy', '2024-03-15', '2024-03-15'),
+('1_5_2024_2_8a1_tinhoc', 5, 1, 1, '8A1', 'Tin học', '2', 2024, '7,8,7,8', 7, 8, 7.5, 'Có sự tiến bộ đáng kể', 'Hoàng Văn Em', 'Nguyễn Thị Thủy', '2024-03-15', '2024-03-15'),
 
 -- Scores for Class 8A2 - Computer Science (Tin học) - Teacher Nguyễn Thị Thủy (ID: 1) - Semester 2
-(6, 1, 2, '8A2', 'Tin học', '2', 2024, '9,10,9,10', 10, 10, 9.7, 'Duy trì phong độ xuất sắc', 'Vũ Thị Giang', 'Nguyễn Thị Thủy', '2024-03-15', '2024-03-15'),
-(7, 1, 2, '8A2', 'Tin học', '2', 2024, '8,8,9,8', 8, 9, 8.3, 'Ổn định và tốt', 'Đỗ Văn Hùng', 'Nguyễn Thị Thủy', '2024-03-15', '2024-03-15'),
-(8, 1, 2, '8A2', 'Tin học', '2', 2024, '8,8,8,9', 8, 9, 8.5, 'Có tiến bộ rõ rệt', 'Bùi Thị Linh', 'Nguyễn Thị Thủy', '2024-03-15', '2024-03-15'),
-(9, 1, 2, '8A2', 'Tin học', '2', 2024, '9,9,8,9', 9, 9, 9.0, 'Duy trì kết quả tốt', 'Ngô Văn Khang', 'Nguyễn Thị Thủy', '2024-03-15', '2024-03-15'),
-(10, 1, 2, '8A2', 'Tin học', '2', 2024, '10,10,9,10', 10, 10, 10.0, 'Hoàn hảo trong cả năm học', 'Cao Thị Mai', 'Nguyễn Thị Thủy', '2024-03-15', '2024-03-15'),
+('1_6_2024_2_8a2_tinhoc', 6, 1, 2, '8A2', 'Tin học', '2', 2024, '9,10,9,10', 10, 10, 9.7, 'Duy trì phong độ xuất sắc', 'Vũ Thị Giang', 'Nguyễn Thị Thủy', '2024-03-15', '2024-03-15'),
+('1_7_2024_2_8a2_tinhoc', 7, 1, 2, '8A2', 'Tin học', '2', 2024, '8,8,9,8', 8, 9, 8.3, 'Ổn định và tốt', 'Đỗ Văn Hùng', 'Nguyễn Thị Thủy', '2024-03-15', '2024-03-15'),
+('1_8_2024_2_8a2_tinhoc', 8, 1, 2, '8A2', 'Tin học', '2', 2024, '8,8,8,9', 8, 9, 8.5, 'Có tiến bộ rõ rệt', 'Bùi Thị Linh', 'Nguyễn Thị Thủy', '2024-03-15', '2024-03-15'),
+('1_9_2024_2_8a2_tinhoc', 9, 1, 2, '8A2', 'Tin học', '2', 2024, '9,9,8,9', 9, 9, 9.0, 'Duy trì kết quả tốt', 'Ngô Văn Khang', 'Nguyễn Thị Thủy', '2024-03-15', '2024-03-15'),
+('1_10_2024_2_8a2_tinhoc', 10, 1, 2, '8A2', 'Tin học', '2', 2024, '10,10,9,10', 10, 10, 10.0, 'Hoàn hảo trong cả năm học', 'Cao Thị Mai', 'Nguyễn Thị Thủy', '2024-03-15', '2024-03-15'),
 
 -- Scores for Class 8B1 - Mathematics (Toán học) - Teacher Trần Văn Minh (ID: 2) - Semester 2
-(11, 2, 3, '8B1', 'Toán học', '2', 2024, '9,9,8,9', 9, 9, 9.0, 'Rất giỏi toán, tiếp tục phát huy', 'Đinh Văn Nam', 'Trần Văn Minh', '2024-03-15', '2024-03-15'),
-(12, 2, 3, '8B1', 'Toán học', '2', 2024, '7,8,8,8', 8, 8, 7.8, 'Có tiến bộ trong học kỳ 2', 'Tạ Thị Oanh', 'Trần Văn Minh', '2024-03-15', '2024-03-15'),
-(13, 2, 3, '8B1', 'Toán học', '2', 2024, '9,10,9,10', 10, 10, 9.5, 'Xuất sắc, học sinh năng khiếu', 'Lý Văn Phong', 'Trần Văn Minh', '2024-03-15', '2024-03-15'),
-(14, 2, 3, '8B1', 'Toán học', '2', 2024, '7,7,8,8', 7, 8, 7.5, 'Có cải thiện so với HK1', 'Dương Thị Quỳnh', 'Trần Văn Minh', '2024-03-15', '2024-03-15'),
+('2_11_2024_2_8b1_toanhoc', 11, 2, 3, '8B1', 'Toán học', '2', 2024, '9,9,8,9', 9, 9, 9.0, 'Rất giỏi toán, tiếp tục phát huy', 'Đinh Văn Nam', 'Trần Văn Minh', '2024-03-15', '2024-03-15'),
+('2_12_2024_2_8b1_toanhoc', 12, 2, 3, '8B1', 'Toán học', '2', 2024, '7,8,8,8', 8, 8, 7.8, 'Có tiến bộ trong học kỳ 2', 'Tạ Thị Oanh', 'Trần Văn Minh', '2024-03-15', '2024-03-15'),
+('2_13_2024_2_8b1_toanhoc', 13, 2, 3, '8B1', 'Toán học', '2', 2024, '9,10,9,10', 10, 10, 9.5, 'Xuất sắc, học sinh năng khiếu', 'Lý Văn Phong', 'Trần Văn Minh', '2024-03-15', '2024-03-15'),
+('2_14_2024_2_8b1_toanhoc', 14, 2, 3, '8B1', 'Toán học', '2', 2024, '7,7,8,8', 7, 8, 7.5, 'Có cải thiện so với HK1', 'Dương Thị Quỳnh', 'Trần Văn Minh', '2024-03-15', '2024-03-15'),
 
 -- Scores for Class 9A1 - Computer Science (Tin học) - Teacher Nguyễn Thị Thủy (ID: 1) - Semester 2
-(15, 1, 4, '9A1', 'Tin học', '2', 2024, '10,10,10,9', 10, 10, 10.0, 'Duy trì đẳng cấp xuất sắc', 'Võ Văn Sơn', 'Nguyễn Thị Thủy', '2024-03-15', '2024-03-15'),
-(16, 1, 4, '9A1', 'Tin học', '2', 2024, '9,9,8,9', 9, 9, 9.0, 'Rất tốt, ổn định', 'Phan Thị Trang', 'Nguyễn Thị Thủy', '2024-03-15', '2024-03-15'),
-(17, 1, 4, '9A1', 'Tin học', '2', 2024, '9,10,9,9', 9, 10, 9.3, 'Duy trì phong độ cao', 'Mai Văn Tuấn', 'Nguyễn Thị Thủy', '2024-03-15', '2024-03-15'),
+('1_15_2024_2_9a1_tinhoc', 15, 1, 4, '9A1', 'Tin học', '2', 2024, '10,10,10,9', 10, 10, 10.0, 'Duy trì đẳng cấp xuất sắc', 'Võ Văn Sơn', 'Nguyễn Thị Thủy', '2024-03-15', '2024-03-15'),
+('1_16_2024_2_9a1_tinhoc', 16, 1, 4, '9A1', 'Tin học', '2', 2024, '9,9,8,9', 9, 9, 9.0, 'Rất tốt, ổn định', 'Phan Thị Trang', 'Nguyễn Thị Thủy', '2024-03-15', '2024-03-15'),
+('1_17_2024_2_9a1_tinhoc', 17, 1, 4, '9A1', 'Tin học', '2', 2024, '9,10,9,9', 9, 10, 9.3, 'Duy trì phong độ cao', 'Mai Văn Tuấn', 'Nguyễn Thị Thủy', '2024-03-15', '2024-03-15'),
 
 -- Scores for Class 7A1 - Computer Science (Tin học) - Teacher Nguyễn Thị Thủy (ID: 1) - Semester 2
-(18, 1, 6, '7A1', 'Tin học', '2', 2024, '8,8,8,9', 8, 9, 8.3, 'Có tiến bộ tốt trong HK2', 'Chu Thị Uyên', 'Nguyễn Thị Thủy', '2024-03-15', '2024-03-15'),
-(19, 1, 6, '7A1', 'Tin học', '2', 2024, '8,9,9,8', 8, 9, 8.5, 'Duy trì kết quả tốt', 'Hà Văn Việt', 'Nguyễn Thị Thủy', '2024-03-15', '2024-03-15'),
-(20, 1, 6, '7A1', 'Tin học', '2', 2024, '9,9,10,9', 9, 10, 9.3, 'Rất tốt, có tiến bộ', 'Lài Thị Xuân', 'Nguyễn Thị Thủy', '2024-03-15', '2024-03-15');
+('1_18_2024_2_7a1_tinhoc', 18, 1, 6, '7A1', 'Tin học', '2', 2024, '8,8,8,9', 8, 9, 8.3, 'Có tiến bộ tốt trong HK2', 'Chu Thị Uyên', 'Nguyễn Thị Thủy', '2024-03-15', '2024-03-15'),
+('1_19_2024_2_7a1_tinhoc', 19, 1, 6, '7A1', 'Tin học', '2', 2024, '8,9,9,8', 8, 9, 8.5, 'Duy trì kết quả tốt', 'Hà Văn Việt', 'Nguyễn Thị Thủy', '2024-03-15', '2024-03-15'),
+('1_20_2024_2_7a1_tinhoc', 20, 1, 6, '7A1', 'Tin học', '2', 2024, '9,9,10,9', 9, 10, 9.3, 'Rất tốt, có tiến bộ', 'Lài Thị Xuân', 'Nguyễn Thị Thủy', '2024-03-15', '2024-03-15');
 
 -- Insert Semester Schedules (Vietnamese descriptions)
 INSERT INTO semester_schedules (schedule_name, semester, year, class_name, start_date_time, end_date_time, is_active, is_locked, description, created_by, created_at, updated_at) VALUES

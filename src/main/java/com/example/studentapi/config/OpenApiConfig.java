@@ -17,20 +17,14 @@ import java.util.List;
 
 @Configuration
 public class OpenApiConfig {
-    @Value("${server.address:0.0.0.0}")
+    @Value("${springdoc.swagger-ui.servers.url:'http://0.0.0.0:8080'}")
     private String address;
-
-    @Value("${server.port:8080}")
-    private String port;
 
     @Bean
     public OpenAPI myOpenAPI() {
-
-        String apiUrl = String.format("http://%s:%s", address, port);
-        System.out.println(apiUrl);
-
+        System.out.println(address);
         Server devServer = new Server()
-                .url(apiUrl)
+                .url(address)
                 .description("Server URL in Development environment");
 
         Contact contact = new Contact()

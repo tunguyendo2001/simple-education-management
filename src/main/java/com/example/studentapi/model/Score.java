@@ -22,7 +22,7 @@ import java.util.stream.Collectors;
 @Table(name = "scores")
 public class Score {
     @Id
-    @Column(name = "id", length = 500)
+    @Column(name = "id", length = 500, insertable = false, updatable = false)
     private String id;
 
     @NotNull(message = "Student ID is required")
@@ -102,22 +102,23 @@ public class Score {
     @JoinColumn(name = "class_id", insertable = false, updatable = false)
     private SchoolClass schoolClass;
 
-    // Method to generate custom ID
-    @PrePersist
-    @PreUpdate
-    public void generateCustomId() {
-        if (id == null || id.trim().isEmpty()) {
-            this.id = generateScoreId();
-        }
-        
-        // Auto-calculate TBM
-        calculateTbm();
-        
-        // Auto-map className to classId if needed
-        if (classId == null && className != null) {
-            // This would require injecting ClassRepository or using static access
-            // We'll handle this in the service layer instead
-        }
+    /**
+     * Clean string for use in ID (remove special characters, spaces, etc.)
+     */
+    private static String cleanString(String input) {
+        if (input == null) return "";
+        // Remove Vietnamese diacritics and special characters, convert to lowercase
+        String cleaned = input
+            .toLowerCase()
+            .replaceAll("[àáạảãâầấậẩẫăằắặẳẵ]", "a")
+            .replaceAll("[èéẹẻẽêềếệểễ]", "e")
+            .replaceAll("[ìíịỉĩ]", "i")
+            .replaceAll("[òóọỏõôồốộổỗơờớợởỡ]", "o")
+            .replaceAll("[ùúụủũưừứựửữ]", "u")
+            .replaceAll("[ỳýỵỷỹ]", "y")
+            .replaceAll("[đ]", "d")
+            .replaceAll("[^a-zA-Z0-9]", "");
+        return cleaned;
     }
 
     /**
@@ -134,37 +135,18 @@ public class Score {
         String cleanClassName = cleanString(className);
         String cleanSubject = cleanString(subject);
         
-        return String.format("%d_%d_%s_%s_%d_%s", 
-            teacherId, studentId, year, semester, cleanClassName, cleanSubject);
-    }
-
-    /**
-     * Clean string for use in ID (remove special characters, spaces, etc.)
-     */
-    private String cleanString(String input) {
-        if (input == null) return "";
-        // Remove Vietnamese diacritics and special characters, convert to lowercase
-        String cleaned = input
-            .toLowerCase()
-            .replaceAll("[àáạảãâầấậẩẫăằắặẳẵ]", "a")
-            .replaceAll("[èéẹẻẽêềếệểễ]", "e")
-            .replaceAll("[ìíịỉĩ]", "i")
-            .replaceAll("[òóọỏõôồốộổỗơờớợởỡ]", "o")
-            .replaceAll("[ùúụủũưừứựửữ]", "u")
-            .replaceAll("[ỳýỵỷỹ]", "y")
-            .replaceAll("[đ]", "d")
-            .replaceAll("[^a-zA-Z0-9]", "");
-        return cleaned;
+        return createScoreId(teacherId, studentId, cleanClassName, cleanSubject, year, cleanSubject);
     }
 
     // Static method to create score ID from parameters
     public static String createScoreId(Long teacherId, Long studentId, String className, 
                                       String subject, Integer year, String semester) {
-        String cleanClassName = className != null ? className.replaceAll("[^a-zA-Z0-9]", "").toLowerCase() : "";
-        String cleanSubject = subject != null ? subject.replaceAll("[^a-zA-Z0-9]", "").toLowerCase() : "";
+        // Clean the strings to avoid issues with special characters
+        String cleanClassName = cleanString(className);
+        String cleanSubject = cleanString(subject);
         
-        return String.format("%d_%d_%s_%s_%d_%s", 
-            teacherId, studentId, cleanClassName, cleanSubject, year, semester);
+        return String.format("%d_%d_%d_%s_%s_%s", 
+            teacherId, studentId, year, semester, cleanClassName, cleanSubject);
     }
 
     // Transient getter and setter for List<Integer>

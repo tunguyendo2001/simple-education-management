@@ -60,6 +60,19 @@ public class ScoreServiceImpl implements ScoreService {
             }
         }
 
+        // Generate custom ID if not provided
+        if (score.getId() == null || score.getId().trim().isEmpty()) {
+            String scoreId = Score.createScoreId(
+                score.getTeacherId(), 
+                score.getStudentId(), 
+                score.getClassName(), 
+                score.getSubject(), 
+                score.getYear(), 
+                score.getSemester()
+            );
+            score.setId(scoreId);
+        }
+
         // Auto-calculate TBM if not provided
         if (score.getTbm() == null || score.getTbm() == 0.0) {
             score.calculateTbm();
@@ -110,6 +123,19 @@ public class ScoreServiceImpl implements ScoreService {
                     if (schoolClass != null) {
                         score.setClassId(schoolClass.getId());
                     }
+                }
+
+                // Generate custom ID if not provided
+                if (score.getId() == null || score.getId().trim().isEmpty()) {
+                    String customId = Score.createScoreId(
+                        score.getTeacherId(), 
+                        score.getStudentId(), 
+                        score.getClassName(), 
+                        score.getSubject(), 
+                        score.getYear(), 
+                        score.getSemester()
+                    );
+                    score.setId(customId);
                 }
                 
                 // Auto-calculate TBM if not provided
@@ -520,8 +546,8 @@ public class ScoreServiceImpl implements ScoreService {
         }
         
         // Semester validation
-        if (score.getSemester() != null && !score.getSemester().matches("[12]")) {
-            errors.add("Semester must be '1' or '2'");
+        if (score.getSemester() != null && !score.getSemester().matches("[123]")) {
+            errors.add("Semester must be '1' or '2' or '3'");
         }
         
         // // Check for duplicate scores (same student, class, subject, year, semester)
