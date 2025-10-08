@@ -41,7 +41,9 @@ services:
         condition: service_healthy
     environment:
       # Database Configuration
-      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/education_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      MYSQL_HOST: ${MYSQL_HOST:-mysql}
+      MYSQL_PORT: ${MYSQL_PORT:-3306}
+      SPRING_DATASOURCE_URL: jdbc:mysql://${MYSQL_HOST:-mysql}:${MYSQL_PORT:-3306}/education_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
       SPRING_DATASOURCE_USERNAME: mysql
       SPRING_DATASOURCE_PASSWORD: mysql
       SPRING_DATASOURCE_DRIVER_CLASS_NAME: com.mysql.cj.jdbc.Driver
@@ -53,8 +55,8 @@ services:
       SPRING_JPA_PROPERTIES_HIBERNATE_DIALECT: org.hibernate.dialect.MySQL8Dialect
       
       # Server Configuration
-      APP_PORT: 8080
-      APP_HOST: ${HOST}
+      APP_PORT: ${APP_PORT}
+      APP_HOST: ${APP_HOST}
       
       # JWT Configuration
       JWT_SECRET: ${JWT_SECRET:-education-jwt-secret-key-for-development-only-change-in-production}

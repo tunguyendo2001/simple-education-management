@@ -40,15 +40,15 @@ public class JwtAuthenticationInterceptor implements HandlerInterceptor {
             return true;
         }
 
-        // Extract JWT token from Authorization header
-        String token = extractTokenFromRequest(request);
+        // // Extract JWT token from Authorization header
+        // String token = extractTokenFromRequest(request);
         
-        if (token == null) {
-            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-            response.getWriter().write("{\"error\":\"No authentication token provided\"}");
-            response.setContentType("application/json");
-            return false;
-        }
+        // if (token == null) {
+        //     response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+        //     response.getWriter().write("{\"error\":\"No authentication token provided\"}");
+        //     response.setContentType("application/json");
+        //     return false;
+        // }
 
         // // Validate token
         // if (!authService.validateToken(token)) {
