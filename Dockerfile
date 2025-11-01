@@ -19,10 +19,12 @@ RUN mvn clean package -DskipTests
 # Runtime stage - use smaller JRE image
 FROM openjdk:17-jdk-slim
 
-# Install useful tools and create app user
+# Install required libraries for POI Excel operations
 RUN apt-get update && apt-get install -y \
     curl \
     netcat-openbsd \
+    fontconfig \
+    libfreetype6 \
     && rm -rf /var/lib/apt/lists/* \
     && addgroup --system spring \
     && adduser --system --group spring
